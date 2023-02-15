@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: nl.tudelft.instrumentation.symbolic.PathVisitorTest
+-------------------------------------------------------------------------------
+Tests run: 24, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.382 sec
