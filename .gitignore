@@ -8,6 +8,12 @@
 ehthumbs.db
 Thumbs.db
 
+# Instrumented files
+instrumented/
+# Target files
+target/
+
+
 # Compiled source #
 ###################
 *.com

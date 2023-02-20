@@ -30,6 +30,24 @@ To build the project, make sure you have navigated to the root of this project a
 
 `mvn clean package`
 
+## NEW SCRIPTS
+
+### before running the docker
+To instrument the java problems run the following command when NOT in the docker container from this directory.
+
+`sh instrument.sh`
+
+### while running the docker
+When compiling the Java problems run the following command while IN the docker container from this directory.
+
+`sh compile.sh`
+
+When you want to run problem X run the following command while IN the docker container from this directory.
+
+`java -cp target/aistr.jar:./instrumented:. ProblemX `
+
+## instrumenting and running by hand.
+
 To instrument a given Java file, use the following command:
 
 `java -cp target/aistr.jar nl.tudelft.instrumentation.Main --type=*TypeOfInstrumentation* --file=*PathToJavaFile* > *OutputPath*`

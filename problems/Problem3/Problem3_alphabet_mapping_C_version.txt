@@ -1,0 +1,16 @@
+iI	9
+iJ	10
+oU	11
+oV	12
+oW	13
+oX	14
+oY	15
+oZ	16
+iA	1
+iB	2
+iC	3
+iD	4
+iE	5
+iF	6
+iG	7
+iH	8

@@ -1,89 +1,1165 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<testsuite tests="24" failures="0" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.372" errors="0" skipped="0">
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.087" tests="24" errors="0" skipped="0" failures="0">
   <properties>
-    <property name="java.runtime.name" value="OpenJDK Runtime Environment"/>
-    <property name="sun.boot.library.path" value="/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64"/>
-    <property name="java.vm.version" value="25.352-b08"/>
-    <property name="java.vm.vendor" value="Private Build"/>
-    <property name="maven.multiModuleProjectDirectory" value="/root/JavaInstrumentation"/>
-    <property name="java.vendor.url" value="http://java.oracle.com/"/>
-    <property name="path.separator" value=":"/>
-    <property name="guice.disable.misplaced.annotation.check" value="true"/>
-    <property name="java.vm.name" value="OpenJDK 64-Bit Server VM"/>
-    <property name="file.encoding.pkg" value="sun.io"/>
-    <property name="user.country" value="US"/>
-    <property name="sun.java.launcher" value="SUN_STANDARD"/>
-    <property name="sun.os.patch.level" value="unknown"/>
-    <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
-    <property name="user.dir" value="/root/JavaInstrumentation"/>
-    <property name="java.runtime.version" value="1.8.0_352-8u352-ga-1~20.04-b08"/>
-    <property name="java.awt.graphicsenv" value="sun.awt.X11GraphicsEnvironment"/>
-    <property name="java.endorsed.dirs" value="/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/endorsed"/>
-    <property name="os.arch" value="amd64"/>
-    <property name="java.io.tmpdir" value="/tmp"/>
-    <property name="line.separator" value="
-"/>
-    <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
-    <property name="os.name" value="Linux"/>
-    <property name="classworlds.conf" value="/usr/share/maven/bin/m2.conf"/>
-    <property name="sun.jnu.encoding" value="ANSI_X3.4-1968"/>
-    <property name="java.library.path" value="/usr/java/packages/lib/amd64:/usr/lib/x86_64-linux-gnu/jni:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/usr/lib/jni:/lib:/usr/lib"/>
-    <property name="maven.conf" value="/usr/share/maven/conf"/>
-    <property name="java.specification.name" value="Java Platform API Specification"/>
-    <property name="java.class.version" value="52.0"/>
-    <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
-    <property name="os.version" value="5.15.49-linuxkit"/>
-    <property name="library.jansi.path" value="/usr/share/maven/lib/jansi-native"/>
-    <property name="user.home" value="/root"/>
-    <property name="user.timezone" value="GMT"/>
-    <property name="java.awt.printerjob" value="sun.print.PSPrinterJob"/>
-    <property name="java.specification.version" value="1.8"/>
-    <property name="file.encoding" value="ANSI_X3.4-1968"/>
-    <property name="user.name" value="root"/>
-    <property name="java.class.path" value="/usr/share/maven/boot/plexus-classworlds-2.x.jar"/>
-    <property name="java.vm.specification.version" value="1.8"/>
+    <property name="java.specification.version" value="17"/>
+    <property name="sun.cpu.isalist" value="amd64"/>
+    <property name="sun.jnu.encoding" value="Cp1252"/>
+    <property name="java.class.path" value="C:\Users\cashe\Desktop\UNI\1_Master\AIforTestingLab\AISTRE-labs\target\test-classes;C:\Users\cashe\Desktop\UNI\1_Master\AIforTestingLab\AISTRE-labs\target\classes;C:\Users\cashe\.m2\repository\com\github\javaparser\javaparser-core\3.18.0\javaparser-core-3.18.0.jar;C:\Users\cashe\.m2\repository\com\google\guava\guava\30.1-jre\guava-30.1-jre.jar;C:\Users\cashe\.m2\repository\com\google\guava\failureaccess\1.0.1\failureaccess-1.0.1.jar;C:\Users\cashe\.m2\repository\com\google\guava\listenablefuture\9999.0-empty-to-avoid-conflict-with-guava\listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar;C:\Users\cashe\.m2\repository\com\google\code\findbugs\jsr305\3.0.2\jsr305-3.0.2.jar;C:\Users\cashe\.m2\repository\org\checkerframework\checker-qual\3.5.0\checker-qual-3.5.0.jar;C:\Users\cashe\.m2\repository\com\google\errorprone\error_prone_annotations\2.3.4\error_prone_annotations-2.3.4.jar;C:\Users\cashe\.m2\repository\com\google\j2objc\j2objc-annotations\1.3\j2objc-annotations-1.3.jar;C:\Users\cashe\.m2\repository\org\apache\commons\commons-lang3\3.11\commons-lang3-3.11.jar;C:\Users\cashe\.m2\repository\com\google\code\gson\gson\2.8.6\gson-2.8.6.jar;C:\Users\cashe\.m2\repository\org\junit\jupiter\junit-jupiter-api\5.7.0\junit-jupiter-api-5.7.0.jar;C:\Users\cashe\.m2\repository\org\apiguardian\apiguardian-api\1.1.0\apiguardian-api-1.1.0.jar;C:\Users\cashe\.m2\repository\org\opentest4j\opentest4j\1.2.0\opentest4j-1.2.0.jar;C:\Users\cashe\.m2\repository\org\junit\platform\junit-platform-commons\1.7.0\junit-platform-commons-1.7.0.jar;C:\Users\cashe\.m2\repository\commons-cli\commons-cli\1.4\commons-cli-1.4.jar;C:\Users\cashe\Desktop\UNI\1_Master\AIforTestingLab\AISTRE-labs\lib\com.microsoft.z3.jar;"/>
+    <property name="java.vm.vendor" value="Oracle Corporation"/>
     <property name="sun.arch.data.model" value="64"/>
-    <property name="java.home" value="/usr/lib/jvm/java-8-openjdk-amd64/jre"/>
-    <property name="sun.java.command" value="org.codehaus.plexus.classworlds.launcher.Launcher clean package"/>
-    <property name="java.specification.vendor" value="Oracle Corporation"/>
-    <property name="user.language" value="en"/>
-    <property name="awt.toolkit" value="sun.awt.X11.XToolkit"/>
-    <property name="java.vm.info" value="mixed mode"/>
-    <property name="java.version" value="1.8.0_352"/>
-    <property name="java.ext.dirs" value="/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/ext:/usr/java/packages/lib/ext"/>
-    <property name="securerandom.source" value="file:/dev/./urandom"/>
-    <property name="sun.boot.class.path" value="/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/resources.jar:/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/rt.jar:/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/sunrsasign.jar:/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/jsse.jar:/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/jce.jar:/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/charsets.jar:/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/jfr.jar:/usr/lib/jvm/java-8-openjdk-amd64/jre/classes"/>
-    <property name="java.vendor" value="Private Build"/>
-    <property name="java.specification.maintenance.version" value="4"/>
-    <property name="maven.home" value="/usr/share/maven"/>
-    <property name="file.separator" value="/"/>
-    <property name="java.vendor.url.bug" value="http://bugreport.sun.com/bugreport/"/>
+    <property name="user.variant" value=""/>
+    <property name="java.vendor.url" value="https://java.oracle.com/"/>
+    <property name="user.timezone" value="Europe/Amsterdam"/>
+    <property name="user.country.format" value="NL"/>
+    <property name="os.name" value="Windows 10"/>
+    <property name="java.vm.specification.version" value="17"/>
+    <property name="sun.java.launcher" value="SUN_STANDARD"/>
+    <property name="user.country" value="GB"/>
+    <property name="sun.boot.library.path" value="C:\Program Files\Java\jdk-17.0.2\bin"/>
+    <property name="sun.java.command" value="C:\Users\cashe\AppData\Local\Temp\surefire13213765370605797529\surefirebooter-20230220110841996_3.jar C:\Users\cashe\AppData\Local\Temp\surefire13213765370605797529 2023-02-20T11-08-41_793-jvmRun1 surefire-20230220110841996_1tmp surefire_0-20230220110841996_2tmp"/>
+    <property name="jdk.debug" value="release"/>
+    <property name="surefire.test.class.path" value="C:\Users\cashe\Desktop\UNI\1_Master\AIforTestingLab\AISTRE-labs\target\test-classes;C:\Users\cashe\Desktop\UNI\1_Master\AIforTestingLab\AISTRE-labs\target\classes;C:\Users\cashe\.m2\repository\com\github\javaparser\javaparser-core\3.18.0\javaparser-core-3.18.0.jar;C:\Users\cashe\.m2\repository\com\google\guava\guava\30.1-jre\guava-30.1-jre.jar;C:\Users\cashe\.m2\repository\com\google\guava\failureaccess\1.0.1\failureaccess-1.0.1.jar;C:\Users\cashe\.m2\repository\com\google\guava\listenablefuture\9999.0-empty-to-avoid-conflict-with-guava\listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar;C:\Users\cashe\.m2\repository\com\google\code\findbugs\jsr305\3.0.2\jsr305-3.0.2.jar;C:\Users\cashe\.m2\repository\org\checkerframework\checker-qual\3.5.0\checker-qual-3.5.0.jar;C:\Users\cashe\.m2\repository\com\google\errorprone\error_prone_annotations\2.3.4\error_prone_annotations-2.3.4.jar;C:\Users\cashe\.m2\repository\com\google\j2objc\j2objc-annotations\1.3\j2objc-annotations-1.3.jar;C:\Users\cashe\.m2\repository\org\apache\commons\commons-lang3\3.11\commons-lang3-3.11.jar;C:\Users\cashe\.m2\repository\com\google\code\gson\gson\2.8.6\gson-2.8.6.jar;C:\Users\cashe\.m2\repository\org\junit\jupiter\junit-jupiter-api\5.7.0\junit-jupiter-api-5.7.0.jar;C:\Users\cashe\.m2\repository\org\apiguardian\apiguardian-api\1.1.0\apiguardian-api-1.1.0.jar;C:\Users\cashe\.m2\repository\org\opentest4j\opentest4j\1.2.0\opentest4j-1.2.0.jar;C:\Users\cashe\.m2\repository\org\junit\platform\junit-platform-commons\1.7.0\junit-platform-commons-1.7.0.jar;C:\Users\cashe\.m2\repository\commons-cli\commons-cli\1.4\commons-cli-1.4.jar;C:\Users\cashe\Desktop\UNI\1_Master\AIforTestingLab\AISTRE-labs\lib\com.microsoft.z3.jar;"/>
     <property name="sun.cpu.endian" value="little"/>
+    <property name="user.home" value="C:\Users\cashe"/>
+    <property name="user.language" value="en"/>
+    <property name="java.specification.vendor" value="Oracle Corporation"/>
+    <property name="java.version.date" value="2022-01-18"/>
+    <property name="java.home" value="C:\Program Files\Java\jdk-17.0.2"/>
+    <property name="file.separator" value="\"/>
+    <property name="basedir" value="C:\Users\cashe\Desktop\UNI\1_Master\AIforTestingLab\AISTRE-labs"/>
+    <property name="java.vm.compressedOopsMode" value="Zero based"/>
+    <property name="line.separator" value="&#10;"/>
+    <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
+    <property name="java.specification.name" value="Java Platform API Specification"/>
+    <property name="surefire.real.class.path" value="C:\Users\cashe\AppData\Local\Temp\surefire13213765370605797529\surefirebooter-20230220110841996_3.jar"/>
+    <property name="user.script" value=""/>
+    <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
+    <property name="java.runtime.version" value="17.0.2+8-LTS-86"/>
+    <property name="user.name" value="cashe"/>
+    <property name="path.separator" value=";"/>
+    <property name="os.version" value="10.0"/>
+    <property name="java.runtime.name" value="Java(TM) SE Runtime Environment"/>
+    <property name="file.encoding" value="Cp1252"/>
+    <property name="java.vm.name" value="Java HotSpot(TM) 64-Bit Server VM"/>
+    <property name="localRepository" value="C:\Users\cashe\.m2\repository"/>
+    <property name="java.vendor.url.bug" value="https://bugreport.java.com/bugreport/"/>
+    <property name="java.io.tmpdir" value="C:\Users\cashe\AppData\Local\Temp\"/>
+    <property name="java.version" value="17.0.2"/>
+    <property name="user.dir" value="C:\Users\cashe\Desktop\UNI\1_Master\AIforTestingLab\AISTRE-labs"/>
+    <property name="os.arch" value="amd64"/>
+    <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
+    <property name="sun.os.patch.level" value=""/>
+    <property name="native.encoding" value="Cp1252"/>
+    <property name="java.library.path" value="C:\Program Files\Java\jdk-17.0.2\bin;C:\Windows\Sun\Java\bin;C:\Windows\system32;C:\Windows;C:\Program Files\Common Files\Oracle\Java\javapath;C:\Program Files (x86)\Common Files\Oracle\Java\javapath;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\dotnet\;C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR;C:\Program Files\nodejs\;C:\Program Files\Git\cmd;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files\apache-maven-3.9.0\bin;C:\Users\cashe\AppData\Local\Microsoft\WindowsApps;C:\Users\cashe\AppData\Roaming\npm;C:\Users\cashe\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\cashe\AppData\Local\Programs\MiKTeX\miktex\bin\x64\;."/>
+    <property name="java.vm.info" value="mixed mode, sharing"/>
+    <property name="java.vendor" value="Oracle Corporation"/>
+    <property name="java.vm.version" value="17.0.2+8-LTS-86"/>
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
-    <property name="sun.cpu.isalist" value=""/>
+    <property name="java.class.version" value="61.0"/>
   </properties>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testInstrumentationShouldAddImport" time="0.025"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testInstrumentationShouldAddImplementToClass" time="0.014"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testInstrumentationShouldAddImportForCallable" time="0.012"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testInstrumentationShouldCreateCallMethod" time="0.013"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testInstrumentationShouldCreateSetSequenceMethod" time="0.011"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testInstrumentationShouldCreateSequenceAttribute" time="0.012"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testInstrumentationShouldCreateRunCall" time="0.009"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleIntGlobalShouldCreateMyVar" time="0.012"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleBoolGlobalShouldCreateMyVar" time="0.013"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleArrayGlobalShouldCreateMyVar" time="0.017"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleStringGlobalShouldCreateMyVar" time="0.018"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testArrayAssignmentToVarGlobalShouldCreateMyVar" time="0.019"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleIfShouldCreateTempVar" time="0.011"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testIncrementShouldCreateIncrementCall" time="0.011"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testIncrementShouldCreateIncrementCallForSingleStatement" time="0.014"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testConditionalShoudlCreateMyAssignAndConditionalCall" time="0.028"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testArrayAccessShouldCreateArrayIndCall" time="0.014"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testDecrementShouldCreateIncrementCall" time="0.012"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleIfShouldCreateOneBinaryExpression" time="0.017"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleIfShouldCreateOneMyIfMethodCall" time="0.013"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testNestedIfShouldCreateTwoMyIfCalls" time="0.012"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleIfShouldCreateOneUnaryExpression" time="0.03"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testEqualsShouldConvertToMyVarEquals" time="0.02"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testManyComparisonsInIfCreatesManyBinaryExpressions" time="0.015"/>
+  <testcase name="testSimpleIfShouldCreateOneBinaryExpression" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.006">
+    <system-out><![CDATA[public class Test {
+
+    public static void main(String[] args) {
+        if (a <= 0)
+            return "INVALID";
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.binaryExpr(my_a, PathTracker.tempVar(0), "<="), a <= 0, 3);
+        if (a <= 0)
+            return "INVALID";
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testInstrumentationShouldCreateSequenceAttribute" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.004">
+    <system-out><![CDATA[public class Test {
+
+    public static void main(String[] args) {
+        if (a.equals(b) && a.equals(b) && a.equals(b) && a.equals(b))
+            return "INVALID";
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.binaryExpr(PathTracker.binaryExpr(PathTracker.binaryExpr(PathTracker.equals(my_b, my_a), PathTracker.equals(my_b, my_a), "&&"), PathTracker.equals(my_b, my_a), "&&"), PathTracker.equals(my_b, my_a), "&&"), a.equals(b) && a.equals(b) && a.equals(b) && a.equals(b), 3);
+        if (a.equals(b) && a.equals(b) && a.equals(b) && a.equals(b))
+            return "INVALID";
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testSimpleIfShouldCreateTempVar" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.003">
+    <system-out><![CDATA[public class Test {
+
+    public static void main(String[] args) {
+        if (a <= 0)
+            return "INVALID";
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.binaryExpr(my_a, PathTracker.tempVar(0), "<="), a <= 0, 3);
+        if (a <= 0)
+            return "INVALID";
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testConditionalShoudlCreateMyAssignAndConditionalCall" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.006">
+    <system-out><![CDATA[public class Test {
+
+    public static void main(String[] args) {
+        if (a <= 0) {
+            a += (a + 20) > a ? 1 : 0;
+            return "INVALID";
+        }
+    }
+}
+
+HERE
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.binaryExpr(my_a, PathTracker.tempVar(0), "<="), a <= 0, 3);
+        if (a <= 0) {
+            PathTracker.myAssign(my_a, PathTracker.conditional(PathTracker.binaryExpr(PathTracker.binaryExpr(my_a, PathTracker.tempVar(20), "+"), my_a, ">"), PathTracker.tempVar(1), PathTracker.tempVar(0)), "+=");
+            a += (a + 20) > a ? 1 : 0;
+            return "INVALID";
+        }
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testIncrementShouldCreateIncrementCall" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.004">
+    <system-out><![CDATA[public class Test {
+
+    public static void main(String[] args) {
+        if (a++ <= 0) {
+            return "INVALID";
+        }
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.binaryExpr(PathTracker.increment(my_a, "++", false), PathTracker.tempVar(0), "<="), a++ <= 0, 3);
+        if (a++ <= 0) {
+            return "INVALID";
+        }
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testSimpleArrayGlobalShouldCreateMyVar" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.004">
+    <system-out><![CDATA[public class Test {
+
+    int[] arr = { 1, 2, 3 };
+
+    public static void main(String[] args) {
+        if (a <= 0)
+            return "INVALID";
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    int[] arr = { 1, 2, 3 };
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.binaryExpr(my_a, PathTracker.tempVar(0), "<="), a <= 0, 4);
+        if (a <= 0)
+            return "INVALID";
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    MyVar[] my_arr = { PathTracker.myVar(1, "my_arr0"), PathTracker.myVar(2, "my_arr1"), PathTracker.myVar(3, "my_arr2") };
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testInstrumentationShouldAddImportForCallable" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.004">
+    <system-out><![CDATA[public class Test {
+
+    public static void main(String[] args) {
+        if (a.equals(b) && a.equals(b) && a.equals(b) && a.equals(b))
+            return "INVALID";
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.binaryExpr(PathTracker.binaryExpr(PathTracker.binaryExpr(PathTracker.equals(my_b, my_a), PathTracker.equals(my_b, my_a), "&&"), PathTracker.equals(my_b, my_a), "&&"), PathTracker.equals(my_b, my_a), "&&"), a.equals(b) && a.equals(b) && a.equals(b) && a.equals(b), 3);
+        if (a.equals(b) && a.equals(b) && a.equals(b) && a.equals(b))
+            return "INVALID";
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testSimpleIntGlobalShouldCreateMyVar" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.003">
+    <system-out><![CDATA[public class Test {
+
+    int a = 55;
+
+    public static void main(String[] args) {
+        if (a <= 0)
+            return "INVALID";
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    int a = 55;
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.binaryExpr(my_a, PathTracker.tempVar(0), "<="), a <= 0, 4);
+        if (a <= 0)
+            return "INVALID";
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    MyVar my_a = PathTracker.myVar(55, "my_a");
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testSimpleIfShouldCreateOneMyIfMethodCall" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.003">
+    <system-out><![CDATA[public class Test {
+
+    public static void main(String[] args) {
+        if (a <= 0)
+            return "INVALID";
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.binaryExpr(my_a, PathTracker.tempVar(0), "<="), a <= 0, 3);
+        if (a <= 0)
+            return "INVALID";
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testSimpleStringGlobalShouldCreateMyVar" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.004">
+    <system-out><![CDATA[public class Test {
+
+    String s = "test";
+
+    public static void main(String[] args) {
+        if (a <= 0)
+            return "INVALID";
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    String s = "test";
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.binaryExpr(my_a, PathTracker.tempVar(0), "<="), a <= 0, 4);
+        if (a <= 0)
+            return "INVALID";
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    MyVar my_s = PathTracker.myVar("test", "my_s");
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testManyComparisonsInIfCreatesManyBinaryExpressions" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.003">
+    <system-out><![CDATA[public class Test {
+
+    public static void main(String[] args) {
+        if (a.equals(b) && a.equals(b) && a.equals(b) && a.equals(b))
+            return "INVALID";
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.binaryExpr(PathTracker.binaryExpr(PathTracker.binaryExpr(PathTracker.equals(my_b, my_a), PathTracker.equals(my_b, my_a), "&&"), PathTracker.equals(my_b, my_a), "&&"), PathTracker.equals(my_b, my_a), "&&"), a.equals(b) && a.equals(b) && a.equals(b) && a.equals(b), 3);
+        if (a.equals(b) && a.equals(b) && a.equals(b) && a.equals(b))
+            return "INVALID";
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testInstrumentationShouldCreateRunCall" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.003">
+    <system-out><![CDATA[public class Test {
+
+    public static void main(String[] args) {
+        Test eca = new Test();
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    public static void main(String[] args) {
+        Test eca = new Test();
+        PathTracker.run(eca.inputs, eca);
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testArrayAccessShouldCreateArrayIndCall" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.003">
+    <system-out><![CDATA[public class Test {
+
+    public static void main(String[] args) {
+        if (a[0] <= 0) {
+            return "INVALID";
+        }
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.binaryExpr(PathTracker.arrayInd(my_a, PathTracker.tempVar(0)), PathTracker.tempVar(0), "<="), a[0] <= 0, 3);
+        if (a[0] <= 0) {
+            return "INVALID";
+        }
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testEqualsShouldConvertToMyVarEquals" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.003">
+    <system-out><![CDATA[public class Test {
+
+    public static void main(String[] args) {
+        if (a.equals(b))
+            return "INVALID";
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.equals(my_b, my_a), a.equals(b), 3);
+        if (a.equals(b))
+            return "INVALID";
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testNestedIfShouldCreateTwoMyIfCalls" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.003">
+    <system-out><![CDATA[public class Test {
+
+    public static void main(String[] args) {
+        if (a <= 0) {
+            if (a <= 0)
+                return "INVALID";
+        }
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.binaryExpr(my_a, PathTracker.tempVar(0), "<="), a <= 0, 3);
+        if (a <= 0) {
+            PathTracker.myIf(PathTracker.binaryExpr(my_a, PathTracker.tempVar(0), "<="), a <= 0, 4);
+            if (a <= 0)
+                return "INVALID";
+        }
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testDecrementShouldCreateIncrementCall" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.003">
+    <system-out><![CDATA[public class Test {
+
+    public static void main(String[] args) {
+        if (a-- <= 0) {
+            return "INVALID";
+        }
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.binaryExpr(PathTracker.increment(my_a, "--", false), PathTracker.tempVar(0), "<="), a-- <= 0, 3);
+        if (a-- <= 0) {
+            return "INVALID";
+        }
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testInstrumentationShouldCreateSetSequenceMethod" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.003">
+    <system-out><![CDATA[public class Test {
+
+    public static void main(String[] args) {
+        if (a.equals(b) && a.equals(b) && a.equals(b) && a.equals(b))
+            return "INVALID";
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.binaryExpr(PathTracker.binaryExpr(PathTracker.binaryExpr(PathTracker.equals(my_b, my_a), PathTracker.equals(my_b, my_a), "&&"), PathTracker.equals(my_b, my_a), "&&"), PathTracker.equals(my_b, my_a), "&&"), a.equals(b) && a.equals(b) && a.equals(b) && a.equals(b), 3);
+        if (a.equals(b) && a.equals(b) && a.equals(b) && a.equals(b))
+            return "INVALID";
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testIncrementShouldCreateIncrementCallForSingleStatement" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.003">
+    <system-out><![CDATA[public class Test {
+
+    public static void main(String[] args) {
+        a++;
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    public static void main(String[] args) {
+        PathTracker.increment(my_a, "++", false);
+        a++;
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testSimpleIfShouldCreateOneUnaryExpression" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.003">
+    <system-out><![CDATA[public class Test {
+
+    public static void main(String[] args) {
+        if (!a)
+            return "INVALID";
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.unaryExpr(my_a, "!"), !a, 3);
+        if (!a)
+            return "INVALID";
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testArrayAssignmentToVarGlobalShouldCreateMyVar" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.004">
+    <system-out><![CDATA[public class Test {
+
+    int[] arrA = { 1, 2, 3 };
+
+    int[] arrB = arrA;
+
+    public static void main(String[] args) {
+        if (a <= 0)
+            return "INVALID";
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    int[] arrA = { 1, 2, 3 };
+
+    int[] arrB = arrA;
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.binaryExpr(my_a, PathTracker.tempVar(0), "<="), a <= 0, 5);
+        if (a <= 0)
+            return "INVALID";
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    MyVar[] my_arrA = { PathTracker.myVar(1, "my_arrA0"), PathTracker.myVar(2, "my_arrA1"), PathTracker.myVar(3, "my_arrA2") };
+
+    MyVar[] my_arrB = PathTracker.myVar(my_arrA, "my_arrB");
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testInstrumentationShouldCreateCallMethod" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.003">
+    <system-out><![CDATA[public class Test {
+
+    public static void main(String[] args) {
+        if (a.equals(b) && a.equals(b) && a.equals(b) && a.equals(b))
+            return "INVALID";
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.binaryExpr(PathTracker.binaryExpr(PathTracker.binaryExpr(PathTracker.equals(my_b, my_a), PathTracker.equals(my_b, my_a), "&&"), PathTracker.equals(my_b, my_a), "&&"), PathTracker.equals(my_b, my_a), "&&"), a.equals(b) && a.equals(b) && a.equals(b) && a.equals(b), 3);
+        if (a.equals(b) && a.equals(b) && a.equals(b) && a.equals(b))
+            return "INVALID";
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testInstrumentationShouldAddImport" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.002">
+    <system-out><![CDATA[public class Test {
+
+    public static void main(String[] args) {
+        if (a.equals(b))
+            return "INVALID";
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.equals(my_b, my_a), a.equals(b), 3);
+        if (a.equals(b))
+            return "INVALID";
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testSimpleBoolGlobalShouldCreateMyVar" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.003">
+    <system-out><![CDATA[public class Test {
+
+    boolean bool = true;
+
+    public static void main(String[] args) {
+        if (a <= 0)
+            return "INVALID";
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    boolean bool = true;
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.binaryExpr(my_a, PathTracker.tempVar(0), "<="), a <= 0, 4);
+        if (a <= 0)
+            return "INVALID";
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    MyVar my_bool = PathTracker.myVar(true, "my_bool");
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
+  <testcase name="testInstrumentationShouldAddImplementToClass" classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.003">
+    <system-out><![CDATA[public class Test {
+
+    public static void main(String[] args) {
+        if (a.equals(b) && a.equals(b) && a.equals(b) && a.equals(b))
+            return "INVALID";
+    }
+}
+
+import nl.tudelft.instrumentation.symbolic.*;
+import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+
+public class Test implements CallableTraceRunner<Void> {
+
+    public static void main(String[] args) {
+        PathTracker.myIf(PathTracker.binaryExpr(PathTracker.binaryExpr(PathTracker.binaryExpr(PathTracker.equals(my_b, my_a), PathTracker.equals(my_b, my_a), "&&"), PathTracker.equals(my_b, my_a), "&&"), PathTracker.equals(my_b, my_a), "&&"), a.equals(b) && a.equals(b) && a.equals(b) && a.equals(b), 3);
+        if (a.equals(b) && a.equals(b) && a.equals(b) && a.equals(b))
+            return "INVALID";
+    }
+
+    public String[] sequence;
+
+    public Void call() {
+        Test cp = new Test();
+        for (String s : sequence) {
+            try {
+                MyVar my_s = PathTracker.myInputVar(s, "input");
+                cp.calculateOutput(s, my_s);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                SymbolicExecutionLab.output("Invalid input: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    public void setSequence(String[] trace) {
+        sequence = trace;
+    }
+
+    public MyVar[] my_sequence;
+}
+
+]]></system-out>
+  </testcase>
 </testsuite>
