@@ -1,1 +1,0 @@
-javac -cp target/aistr.jar:. instrumented/Problem1.java;javac -cp target/aistr.jar:. instrumented/Problem2.java;
