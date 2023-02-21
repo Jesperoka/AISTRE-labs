@@ -8,11 +8,12 @@
 ehthumbs.db
 Thumbs.db
 
-# Instrumented files
+# Folders
 instrumented/
-# Target files
 target/
-
+maven-archiver/
+maven-status/
+surefire-reports/
 
 # Compiled source #
 ###################
