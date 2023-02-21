@@ -11,6 +11,7 @@ public class FuzzingLab {
         static List<String> currentTrace;
         static int traceLength = 10;
         static boolean isFinished = false;
+        static Set<AbstractMap.SimpleEntry<Boolean, Integer>> visitedBranches = new HashSet<>();
 
         static void initialize(String[] inputSymbols){
                 // Initialise a random trace from the input symbols of the problem.
@@ -22,7 +23,7 @@ public class FuzzingLab {
          */
         static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
                 // do something useful
-                System.out.println(condition.toString());
+                visitedBranches.add(new AbstractMap.SimpleEntry<Boolean,Integer>(value, line_nr));
         }
 
         /**
@@ -53,18 +54,30 @@ public class FuzzingLab {
                 return trace;
         }
 
-        static void run() {
-                initialize(DistanceTracker.inputSymbols);
-                DistanceTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
+        static double branchDistance() {
+                
+                return 0;
+        }
 
+        static void run() {
                 // Place here your code to guide your fuzzer with its search.
+                int maxIterations = 10;
+                int i = 0;
                 while(!isFinished) {
-                        // Do things!
+                        initialize(DistanceTracker.inputSymbols);
+                        DistanceTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
+                        
                         try {
-                                System.out.println("Woohoo, looping!");
+                                // System.out.println("Woohoo, looping!");
                                 Thread.sleep(1000);
                         } catch (InterruptedException e) {
                                 e.printStackTrace();
+                        }
+
+                        i++;
+                        if (i >= maxIterations) { 
+                                System.out.println("Number of branches: " + visitedBranches.size()); 
+                                isFinished = true;
                         }
                 }
         }
