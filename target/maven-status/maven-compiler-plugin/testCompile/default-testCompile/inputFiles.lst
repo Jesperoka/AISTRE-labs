@@ -1,6 +1,6 @@
-C:\Users\cashe\Desktop\UNI\1_Master\AIforTestingLab\AISTRE-labs\src\test\java\nl\tudelft\instrumentation\fuzzing\DistanceVisitorTest.java
-C:\Users\cashe\Desktop\UNI\1_Master\AIforTestingLab\AISTRE-labs\src\test\java\nl\tudelft\instrumentation\symbolic\PathVisitorTest.java
-C:\Users\cashe\Desktop\UNI\1_Master\AIforTestingLab\AISTRE-labs\src\test\java\nl\tudelft\instrumentation\patching\OperatorVisitorTest.java
-C:\Users\cashe\Desktop\UNI\1_Master\AIforTestingLab\AISTRE-labs\src\test\java\nl\tudelft\instrumentation\line\LineCoverageVisitorTest.java
-C:\Users\cashe\Desktop\UNI\1_Master\AIforTestingLab\AISTRE-labs\src\test\java\nl\tudelft\instrumentation\MainTest.java
-C:\Users\cashe\Desktop\UNI\1_Master\AIforTestingLab\AISTRE-labs\src\test\java\nl\tudelft\instrumentation\branch\BranchCoverageVisitorTest.java
+/home/str/JavaInstrumentation/src/test/java/nl/tudelft/instrumentation/MainTest.java
+/home/str/JavaInstrumentation/src/test/java/nl/tudelft/instrumentation/fuzzing/DistanceVisitorTest.java
+/home/str/JavaInstrumentation/src/test/java/nl/tudelft/instrumentation/patching/OperatorVisitorTest.java
+/home/str/JavaInstrumentation/src/test/java/nl/tudelft/instrumentation/branch/BranchCoverageVisitorTest.java
+/home/str/JavaInstrumentation/src/test/java/nl/tudelft/instrumentation/line/LineCoverageVisitorTest.java
+/home/str/JavaInstrumentation/src/test/java/nl/tudelft/instrumentation/symbolic/PathVisitorTest.java
