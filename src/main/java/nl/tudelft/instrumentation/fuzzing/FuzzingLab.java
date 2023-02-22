@@ -3,6 +3,8 @@ package nl.tudelft.instrumentation.fuzzing;
 import java.util.*;
 import java.util.Random;
 
+import com.github.javaparser.printer.concretesyntaxmodel.CsmConditional.Condition;
+
 /**
  * You should write your own solution using this class.
  */
@@ -23,7 +25,10 @@ public class FuzzingLab {
          */
         static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
                 // do something useful
-                visitedBranches.add(new AbstractMap.SimpleEntry<Boolean,Integer>(value, line_nr));
+                if (visitedBranches.add(new AbstractMap.SimpleEntry<Boolean,Integer>(value, line_nr))) {
+                        
+                        branchDistance(condition, value);
+                }
         }
 
         /**
@@ -54,9 +59,97 @@ public class FuzzingLab {
                 return trace;
         }
 
-        static double branchDistance() {
-                
-                return 0;
+        static double editDistance(String leftString, String rightString) {
+                int m = leftString.length();
+                int n = rightString.length();
+                int table[][] = new int[m + 1][n + 1];
+                for (int i = 0; i <= m; i++) {
+                        for (int j = 0; j <= n; j++) {
+                                // If first string is empty
+                                if (i == 0)
+                                        table[i][j] = j;
+                                        // If second string is empty
+                                else if (j == 0)
+                                        table[i][j] = i;
+                                        // If last characters are same
+                                else if (leftString.charAt(i - 1) == rightString.charAt(j - 1))
+                                        table[i][j] = table[i - 1][j - 1];
+                                        // If the last character is different
+                                else
+                                        table[i][j] = 1 + Math.min(table[i][j - 1], Math.min(table[i - 1][j], table[i - 1][j - 1]));
+                        }
+                }
+                return table[m][n];
+        }
+
+        static double branchDistanceEquality(MyVar condition) {
+                switch (condition.left.type) {
+                        case BOOL:
+                                return condition.left.value == condition.right.value ? 0 : 1;
+                        case INT:
+                                return Math.abs(condition.left.int_value-condition.right.int_value);
+                        case STRING:
+                                return editDistance(condition.left.str_value, condition.right.str_value);
+                        default:
+                                return -1;
+                }
+        }
+
+        static double branchDistanceNotEquality() {
+
+        }
+
+        static double branchDistanceBinary(MyVar condition) {
+                switch (condition.operator) {
+                        case "==":
+                                switch () {
+
+                                }
+                        case "!=":
+                                break;
+                        case "<=":
+                                break;
+                        case ">=":
+                                break;
+                        case "<":
+                                break;
+                        case ">":
+                                break;
+                        default:
+                                throw new IllegalArgumentException("Unexpected or unknown condition\n");
+                }
+        }
+
+
+        static double branchDistance(MyVar condition, boolean value) {
+                double branchDistance = -1;
+                double epsilon = 10e-7;
+                switch (condition.type) {
+                        case BOOL:
+                                branchDistance = condition.value ? 1 : 0; 
+                                break;
+                        case UNARY:
+                                branchDistance = condition.left.value ? 0 : 1;
+                                break;
+                        case BINARY:
+
+                                branchDistance = ;
+                                break;
+                        default:
+                                System.out.println("Unexpected condition type: " + condition.type);
+                                throw new IllegalArgumentException("Unexpected or unknown condition\n");
+                    }
+
+                if (branchDistance < 0) { 
+                        throw new IllegalArgumentException("Negative branch distance!\n"); 
+                }
+
+                branchDistance = branchDistance / (branchDistance + 1);
+                if (!value) { 
+                        branchDistance = 1 - branchDistance; 
+                }
+
+                return branchDistance;
         }
 
         static void run() {
@@ -68,7 +161,6 @@ public class FuzzingLab {
                         DistanceTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
                         
                         try {
-                                // System.out.println("Woohoo, looping!");
                                 Thread.sleep(1000);
                         } catch (InterruptedException e) {
                                 e.printStackTrace();
