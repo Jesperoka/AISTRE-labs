@@ -95,8 +95,69 @@ public class FuzzingLab {
                 }
         }
 
-        static double branchDistanceNotEquality() {
+        static double branchDistanceNotEquality(MyVar condition) {
+                switch (condition.left.type) {
+                        case BOOL:
+                                return condition.left.value != condition.right.value ? 0 : 1;
+                        case INT:
+                                return condition.left.int_value != condition.right.int_value ? 0 : 1;
+                        case STRING:
+                                return condition.left.str_value.equals(condition.right.str_value) ? 1 : 0;
+                        default:
+                                return -1;
+                }
+        }
 
+        static double branchDistanceLessThan(MyVar condition) {
+                switch (condition.left.type) {
+                        case BOOL:
+                                return condition.left.value != condition.right.value ? 0 : 1;
+                        case INT:
+                                return condition.left.int_value != condition.right.int_value ? 0 : 1;
+                        case STRING:
+                                return condition.left.str_value.equals(condition.right.str_value) ? 1 : 0;
+                        default:
+                                return -1;
+                }
+        }
+
+        static double branchDistanceGreaterThan(MyVar condition) {
+                switch (condition.left.type) {
+                        case BOOL:
+                                return condition.left.value != condition.right.value ? 0 : 1;
+                        case INT:
+                                return condition.left.int_value != condition.right.int_value ? 0 : 1;
+                        case STRING:
+                                return condition.left.str_value.equals(condition.right.str_value) ? 1 : 0;
+                        default:
+                                return -1;
+                }
+        }
+
+        static double branchDistanceLessThan(MyVar condition) {
+                switch (condition.left.type) {
+                        case BOOL:
+                                return condition.left.value != condition.right.value ? 0 : 1;
+                        case INT:
+                                return condition.left.int_value != condition.right.int_value ? 0 : 1;
+                        case STRING:
+                                return condition.left.str_value.equals(condition.right.str_value) ? 1 : 0;
+                        default:
+                                return -1;
+                }
+        }
+
+        static double branchDistanceGreaterThan(MyVar condition) {
+                switch (condition.left.type) {
+                        case BOOL:
+                                return condition.left.value != condition.right.value ? 0 : 1;
+                        case INT:
+                                return condition.left.int_value != condition.right.int_value ? 0 : 1;
+                        case STRING:
+                                return condition.left.str_value.equals(condition.right.str_value) ? 1 : 0;
+                        default:
+                                return -1;
+                }
         }
 
         static double branchDistanceBinary(MyVar condition) {
