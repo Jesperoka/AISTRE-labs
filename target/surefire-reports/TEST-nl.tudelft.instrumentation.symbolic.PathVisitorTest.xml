@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuite tests="24" failures="0" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.712" errors="0" skipped="0">
+<testsuite tests="24" failures="0" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest" time="0.087" errors="0" skipped="0">
   <properties>
     <property name="java.runtime.name" value="OpenJDK Runtime Environment"/>
     <property name="sun.boot.library.path" value="/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64"/>
     <property name="java.vm.version" value="25.352-b08"/>
     <property name="java.vm.vendor" value="Private Build"/>
-    <property name="maven.multiModuleProjectDirectory" value="/home/str/JavaInstrumentation"/>
+    <property name="maven.multiModuleProjectDirectory" value="/home/str"/>
     <property name="java.vendor.url" value="http://java.oracle.com/"/>
     <property name="path.separator" value=":"/>
     <property name="guice.disable.misplaced.annotation.check" value="true"/>
@@ -15,7 +15,7 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="sun.os.patch.level" value="unknown"/>
     <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
-    <property name="user.dir" value="/home/str/JavaInstrumentation"/>
+    <property name="user.dir" value="/home/str"/>
     <property name="java.runtime.version" value="1.8.0_352-8u352-ga-1~20.04-b08"/>
     <property name="java.awt.graphicsenv" value="sun.awt.X11GraphicsEnvironment"/>
     <property name="java.endorsed.dirs" value="/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/endorsed"/>
@@ -32,7 +32,7 @@
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="java.class.version" value="52.0"/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
-    <property name="os.version" value="5.15.79.1-microsoft-standard-WSL2"/>
+    <property name="os.version" value="5.10.16.3-microsoft-standard-WSL2"/>
     <property name="library.jansi.path" value="/usr/share/maven/lib/jansi-native"/>
     <property name="user.home" value="/root"/>
     <property name="user.timezone" value="GMT"/>
@@ -62,28 +62,28 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="sun.cpu.isalist" value=""/>
   </properties>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testIncrementShouldCreateIncrementCall" time="0.097"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testIncrementShouldCreateIncrementCallForSingleStatement" time="0.027"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testConditionalShoudlCreateMyAssignAndConditionalCall" time="0.048"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testArrayAccessShouldCreateArrayIndCall" time="0.032"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testDecrementShouldCreateIncrementCall" time="0.038"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleIfShouldCreateOneBinaryExpression" time="0.029"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleIfShouldCreateOneMyIfMethodCall" time="0.015"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testNestedIfShouldCreateTwoMyIfCalls" time="0.02"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleIfShouldCreateOneUnaryExpression" time="0.022"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testEqualsShouldConvertToMyVarEquals" time="0.022"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testInstrumentationShouldAddImport" time="0.018"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testManyComparisonsInIfCreatesManyBinaryExpressions" time="0.026"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testInstrumentationShouldAddImplementToClass" time="0.022"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testInstrumentationShouldAddImportForCallable" time="0.035"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testInstrumentationShouldCreateCallMethod" time="0.023"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testInstrumentationShouldCreateSetSequenceMethod" time="0.027"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testInstrumentationShouldCreateSequenceAttribute" time="0.021"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testInstrumentationShouldCreateRunCall" time="0.02"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleIntGlobalShouldCreateMyVar" time="0.032"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleBoolGlobalShouldCreateMyVar" time="0.032"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleArrayGlobalShouldCreateMyVar" time="0.043"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleStringGlobalShouldCreateMyVar" time="0.019"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testArrayAssignmentToVarGlobalShouldCreateMyVar" time="0.023"/>
-  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleIfShouldCreateTempVar" time="0.021"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleStringGlobalShouldCreateMyVar" time="0.009"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testArrayAssignmentToVarGlobalShouldCreateMyVar" time="0.006"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleIfShouldCreateTempVar" time="0.003"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testIncrementShouldCreateIncrementCall" time="0.003"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testIncrementShouldCreateIncrementCallForSingleStatement" time="0.003"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testConditionalShoudlCreateMyAssignAndConditionalCall" time="0.006"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testArrayAccessShouldCreateArrayIndCall" time="0.005"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testDecrementShouldCreateIncrementCall" time="0.003"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleIfShouldCreateOneBinaryExpression" time="0.003"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleIfShouldCreateOneMyIfMethodCall" time="0.003"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testNestedIfShouldCreateTwoMyIfCalls" time="0.003"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleIfShouldCreateOneUnaryExpression" time="0.003"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testEqualsShouldConvertToMyVarEquals" time="0.003"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testInstrumentationShouldAddImport" time="0.003"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testManyComparisonsInIfCreatesManyBinaryExpressions" time="0.002"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testInstrumentationShouldAddImplementToClass" time="0.004"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testInstrumentationShouldAddImportForCallable" time="0.003"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testInstrumentationShouldCreateCallMethod" time="0.002"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testInstrumentationShouldCreateSetSequenceMethod" time="0.004"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testInstrumentationShouldCreateSequenceAttribute" time="0.004"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testInstrumentationShouldCreateRunCall" time="0.003"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleIntGlobalShouldCreateMyVar" time="0.004"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleBoolGlobalShouldCreateMyVar" time="0.003"/>
+  <testcase classname="nl.tudelft.instrumentation.symbolic.PathVisitorTest" name="nl.tudelft.instrumentation.symbolic.PathVisitorTest.testSimpleArrayGlobalShouldCreateMyVar" time="0.002"/>
 </testsuite>

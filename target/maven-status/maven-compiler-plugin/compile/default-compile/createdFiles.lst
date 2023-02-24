@@ -16,6 +16,7 @@ nl/tudelft/instrumentation/fuzzing/FuzzingLab.class
 nl/tudelft/instrumentation/symbolic/PathTracker.class
 nl/tudelft/instrumentation/branch/BranchCoverageTracker$1.class
 nl/tudelft/instrumentation/CommandLineParser.class
+nl/tudelft/instrumentation/fuzzing/FuzzingLab$1.class
 nl/tudelft/instrumentation/fuzzing/DistanceTracker.class
 nl/tudelft/instrumentation/fuzzing/MyVar$1.class
 nl/tudelft/instrumentation/line/LineCoverageVisitor.class
