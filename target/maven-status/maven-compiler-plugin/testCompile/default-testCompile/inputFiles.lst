@@ -1,6 +1,0 @@
-/root/JavaInstrumentation/src/test/java/nl/tudelft/instrumentation/branch/BranchCoverageVisitorTest.java
-/root/JavaInstrumentation/src/test/java/nl/tudelft/instrumentation/symbolic/PathVisitorTest.java
-/root/JavaInstrumentation/src/test/java/nl/tudelft/instrumentation/patching/OperatorVisitorTest.java
-/root/JavaInstrumentation/src/test/java/nl/tudelft/instrumentation/fuzzing/DistanceVisitorTest.java
-/root/JavaInstrumentation/src/test/java/nl/tudelft/instrumentation/MainTest.java
-/root/JavaInstrumentation/src/test/java/nl/tudelft/instrumentation/line/LineCoverageVisitorTest.java
