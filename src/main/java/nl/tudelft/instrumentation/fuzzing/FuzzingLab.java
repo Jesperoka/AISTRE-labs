@@ -7,49 +7,33 @@ import java.util.Random;
  * You should write your own solution using this class.
  */
 public class FuzzingLab {
-        static Random r = new Random();
-        static List<String> currentTrace;
-        static int traceLength = 10;
-        static boolean isFinished = false;
+        // Constants
+        static final int TRACE_LENGTH = 10;
+        static final int STRICT_INEQUALITY_MINIMUM_BRANCH_DISTANCE = 1;
+        static final int RANDOM_MUTATION_ATTEMPTS = 10;
 
-        static Set<AbstractMap.SimpleEntry<Boolean, Integer>> totalVisitedBranches = new HashSet<>();
-        static int branchesVisited = 0;
-        static double totalCurrentBranchDistance = 0;
-
-        //static List<String> bestTrace;
-
-        static void initialize(String[] inputSymbols){
-                // Initialise a random trace from the input symbols of the problem.
-                currentTrace = generateRandomTrace(inputSymbols);
+        // Variables used by the fuzzer
+        private static class FuzzerState {
+                static List<String> currentTrace; // raii?
+                static double currentSumOfBranchDistances = 0;
+                static boolean isFinished = false;
         }
+        private static final Random rng = new Random(); // make final?
+        private static Set<String> triggeredErrorCodes = new HashSet<>();
+        private static Set<AbstractMap.SimpleEntry<Boolean, Integer>> uniqueVisitedBranches = new HashSet<>();
 
-        /**
-         * Write your solution that specifies what should happen when a new branch has been found.
-         */
+        // If a new branch is found, keep track of it and update the total branch distance.
         static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
-                // do something useful
-                //System.out.println(branchDistance(condition, value));
-                totalVisitedBranches.add(new AbstractMap.SimpleEntry<Boolean,Integer>(value, line_nr));
-                // calculating the total branch distance
-                totalCurrentBranchDistance+=branchDistance(condition, value);
-                branchesVisited++;
+                if (uniqueVisitedBranches.add(new AbstractMap.SimpleEntry<Boolean,Integer>(value, line_nr))) {
+                        FuzzerState.currentSumOfBranchDistances += branchDistance(condition, value);
+                }
         }
 
-        /**
-         * Method for fuzzing new inputs for a program.
-         * @param inputSymbols the inputSymbols to fuzz from.
-         * @return a fuzzed sequence
-         */
-        static List<String> fuzz(String[] inputSymbols){
-                /*
-                 * Add here your code for fuzzing a new sequence for the RERS problem.
-                 * You can guide your fuzzer to fuzz "smart" input sequences to cover
-                 * more branches. Right now we just generate a complete random sequence
-                 * using the given input symbols. Please change it to your own code.
-                 */
-                List<String> fuzzedTrace = new ArrayList<>(currentTrace);
-                fuzzedTrace.set(r.nextInt(currentTrace.size()), inputSymbols[r.nextInt(inputSymbols.length)]);
-                return generateRandomTrace(inputSymbols);
+        // Copies the input trace and changes one element to a random element of inputSymbols
+        static List<String> fuzz(String[] inputSymbols, List<String> trace){
+                List<String> fuzzedTrace = new ArrayList<>(trace);
+                fuzzedTrace.set(rng.nextInt(FuzzerState.currentTrace.size()), inputSymbols[rng.nextInt(inputSymbols.length)]);
+                return fuzzedTrace;
         }
 
         /**
@@ -59,12 +43,13 @@ public class FuzzingLab {
          */
         static List<String> generateRandomTrace(String[] symbols) {
                 ArrayList<String> trace = new ArrayList<>();
-                for (int i = 0; i < traceLength; i++) {
-                        trace.add(symbols[r.nextInt(symbols.length)]);
+                for (int i = 0; i < TRACE_LENGTH; i++) {
+                        trace.add(symbols[rng.nextInt(symbols.length)]);
                 }
                 return trace;
         }
 
+        // TODO: function description
         static double editDistance(String leftString, String rightString) {
                 int m = leftString.length();
                 int n = rightString.length();
@@ -88,6 +73,7 @@ public class FuzzingLab {
                 return table[m][n];
         }
 
+        // TODO: function description
         static double branchDistanceEquality(MyVar condition) {
                 switch (condition.left.type) {
                         case BOOL:
@@ -101,6 +87,7 @@ public class FuzzingLab {
                 }
         }
 
+        // TODO: function description
         static double branchDistanceNotEquality(MyVar condition) {
                 switch (condition.left.type) {
                         case BOOL:
@@ -114,16 +101,14 @@ public class FuzzingLab {
                 }
         }
 
-        static int k = 1;
-
-        static double branchDistanceLessThan(MyVar condition) {
+        static double branchDistanceLessThan(MyVar condition, int k) {
                 if (condition.left.type == TypeEnum.INT) {
                         return condition.left.int_value < condition.right.int_value ? 0 : condition.left.int_value - condition.right.int_value + k;
                 }
                 return -1;
         }
 
-        static double branchDistanceGreaterThan(MyVar condition) {
+        static double branchDistanceGreaterThan(MyVar condition, int k) {
                 if (condition.left.type == TypeEnum.INT) {
                         return condition.left.int_value > condition.right.int_value ? 0 : condition.right.int_value - condition.left.int_value + k;
                 }
@@ -131,17 +116,11 @@ public class FuzzingLab {
         }
 
         static double branchDistanceLessThanEqual(MyVar condition) {
-                if (condition.left.type == TypeEnum.INT) {
-                        return condition.left.int_value < condition.right.int_value ? 0 : condition.left.int_value - condition.right.int_value;
-                }
-                return -1;
+                return branchDistanceLessThan(condition, 0);
         }
 
         static double branchDistanceGreaterThanEqual(MyVar condition) {
-                if (condition.left.type == TypeEnum.INT) {
-                        return condition.left.int_value > condition.right.int_value ? 0 : condition.right.int_value - condition.left.int_value;
-                }
-                return -1;
+                return branchDistanceGreaterThan(condition, 0);
         }
 
         static double branchDistanceBinary(MyVar condition, boolean value) {
@@ -155,9 +134,9 @@ public class FuzzingLab {
                         case ">=":
                                 return branchDistanceGreaterThanEqual(condition);
                         case "<":
-                                return branchDistanceLessThan(condition);
+                                return branchDistanceLessThan(condition, STRICT_INEQUALITY_MINIMUM_BRANCH_DISTANCE);
                         case ">":
-                                return branchDistanceGreaterThan(condition);
+                                return branchDistanceGreaterThan(condition, STRICT_INEQUALITY_MINIMUM_BRANCH_DISTANCE);
                         case "&":
                         case "&&":
                                 return branchDistance(condition.left, value) + branchDistance(condition.right, value);
@@ -181,7 +160,6 @@ public class FuzzingLab {
                                 branchDistance = condition.left.value ? 0 : 1;
                                 break;
                         case BINARY:
-
                                 branchDistance = branchDistanceBinary(condition, value);
                                 break;
                         default:
@@ -197,54 +175,44 @@ public class FuzzingLab {
                 if (!value) { 
                         branchDistance = 1 - branchDistance; 
                 }
-
                 return branchDistance;
         }
 
+        
+        
         static void run() {
-                // Place here your code to guide your fuzzer with its search.
-                int maxIterations = 100;
-                int i = 0;
+                // Initialize
+                int maxIterations = 1000;
+                FuzzerState.currentTrace = generateRandomTrace(DistanceTracker.inputSymbols);
+                DistanceTracker.runNextFuzzedSequence(FuzzerState.currentTrace.toArray(new String[0]));
 
-                initialize(DistanceTracker.inputSymbols);
-                DistanceTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
-                while(!isFinished) {
-                        List<String> current = currentTrace;
-                        List<String> bestNewTrace = currentTrace;
-                        double bestNewDistance = totalCurrentBranchDistance;
-                        // try 10 random mutations of the currentTrace.
-                        for(int j = 0; j < 10; j++) {
-                                totalCurrentBranchDistance = 0;
-                                branchesVisited = 0;
-                                DistanceTracker.runNextFuzzedSequence(fuzz(DistanceTracker.inputSymbols).toArray(new String[0]));
-                                System.out.println("test");
-                                //DistanceTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
-                                if (totalCurrentBranchDistance < bestNewDistance) {
-                                        bestNewTrace = currentTrace;
-                                        bestNewDistance = totalCurrentBranchDistance;
+                int i = 0;
+                while(!FuzzerState.isFinished && i <= maxIterations) {
+                        List<String> bestNewTrace = FuzzerState.currentTrace;
+                        double bestNewDistance = FuzzerState.currentSumOfBranchDistances;
+
+                        // try X random mutations of the current trace.
+                        for(int j = 0; j < RANDOM_MUTATION_ATTEMPTS; j++) {
+                                FuzzerState.currentSumOfBranchDistances = 0;
+                                List<String> fuzzedTrace = fuzz(DistanceTracker.inputSymbols, FuzzerState.currentTrace);
+                                DistanceTracker.runNextFuzzedSequence(fuzzedTrace.toArray(new String[0]));
+                                if (FuzzerState.currentSumOfBranchDistances < bestNewDistance) {
+                                        bestNewTrace = fuzzedTrace;
+                                        bestNewDistance = FuzzerState.currentSumOfBranchDistances;
                                 }
                         }
-                        // if no better trace was found reset.
-                        if (current.equals(bestNewTrace)) {
-                                totalCurrentBranchDistance = 0;
-                                branchesVisited = 0;
-                                initialize(DistanceTracker.inputSymbols);
-                                DistanceTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
-                                System.out.println("no better branch found by fuzzing");
-                        }
-                        // set the new starting trace equal to the other traces
-                        else {
-                                totalCurrentBranchDistance = 0;
-                                branchesVisited = 0;
-                                currentTrace = bestNewTrace;
-
+                        // if no better trace was found, reset. Otherwise update the current trace.
+                        if (FuzzerState.currentTrace.equals(bestNewTrace)) {
+                                FuzzerState.currentSumOfBranchDistances = 0;
+                                FuzzerState.currentTrace = generateRandomTrace(DistanceTracker.inputSymbols);
+                                DistanceTracker.runNextFuzzedSequence(FuzzerState.currentTrace.toArray(new String[0]));
+                        } else {
+                                FuzzerState.currentTrace = bestNewTrace;
                         }
                         i++;
-                        if (i >= maxIterations) { 
-                                System.out.println("Number of branches: " + totalVisitedBranches.size());
-                                isFinished = true;
-                        }
                 }
+                System.out.println("\nNumber of unique branches: " + uniqueVisitedBranches.size() + "\n");
+                System.out.println("Error codes triggered:\n" + triggeredErrorCodes + "\n");
         }
 
         /**
@@ -254,5 +222,9 @@ public class FuzzingLab {
          */
         public static void output(String out){
                 System.out.println(out);
+                String[] splitOutput = out.split("error_", 2);
+                if (splitOutput.length == 2) {
+                        triggeredErrorCodes.add(splitOutput[1]);
+                }
         }
 }
