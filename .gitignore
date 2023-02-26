@@ -10,10 +10,11 @@ Thumbs.db
 
 # Folders
 instrumented/
-target/
-maven-archiver/
-maven-status/
-surefire-reports/
+target/*
+!archive-tmp
+!generated-sources
+!generated-test-sources
+!test-classes
 
 # Compiled source #
 ###################
