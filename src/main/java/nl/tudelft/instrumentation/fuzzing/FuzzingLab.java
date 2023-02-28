@@ -1,7 +1,6 @@
 package nl.tudelft.instrumentation.fuzzing;
 
 import java.util.*;
-import java.util.Random;
 
 /**
  * You should write your own solution using this class.
@@ -11,8 +10,8 @@ public class FuzzingLab {
         private static final int TRACE_LENGTH = 10;
         private static final int STRICT_INEQUALITY_MINIMUM_BRANCH_DISTANCE = 1;
         private static final int RANDOM_MUTATION_ATTEMPTS = 10;
-        private static final double NANOSECS_PER_SEC = 10e9;
-        private static final double FIVE_MIN_IN_NANOSECS = 5*60*NANOSECS_PER_SEC;
+        private static final long NANOSECS_PER_SEC = 1000l*1000*1000;
+        private static final long FIVE_MIN_IN_NANOSECS = 5*60*NANOSECS_PER_SEC;
 
         private static final Random RNG = new Random();
 
@@ -20,7 +19,7 @@ public class FuzzingLab {
         private static class FuzzerState {
                 static List<String> currentTrace = Arrays.asList("");
                 static double currentSumOfBranchDistances = 0;
-                static int currentNumberOfBranchesCovered = 0;
+                static Set<Integer> currentUniqueBranchesCovered = new HashSet<>();
                 static boolean isFinished = false;
         }
         // Values output by the fuzzer at the end
@@ -39,11 +38,11 @@ public class FuzzingLab {
 
         // If a new branch is found, keep track of it and update the total branch distance.
         static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
-                FuzzerState.currentNumberOfBranchesCovered++;
+                FuzzerState.currentUniqueBranchesCovered.add(line_nr);
                 FuzzerState.currentSumOfBranchDistances += branchDistance(condition, value);
                 FuzzerOutput.uniqueVisitedBranches.add(new AbstractMap.SimpleEntry<Boolean, Integer>(value, line_nr));
-                if (FuzzerState.currentNumberOfBranchesCovered > FuzzerOutput.mostBranchesCovered) {
-                        FuzzerOutput.mostBranchesCovered = FuzzerState.currentNumberOfBranchesCovered;
+                if (FuzzerState.currentUniqueBranchesCovered.size() > FuzzerOutput.mostBranchesCovered) {
+                        FuzzerOutput.mostBranchesCovered = FuzzerState.currentUniqueBranchesCovered.size();
                         FuzzerOutput.mostCoveringInput = FuzzerState.currentTrace;
                 }
         }
@@ -225,14 +224,14 @@ public class FuzzingLab {
 
                 int i = 0;
                 double startTime = System.nanoTime();
-                while(!FuzzerState.isFinished && i <= maxIterations) {
+                while(!FuzzerState.isFinished) { // && i <= maxIterations
                         List<String> bestNewTrace = FuzzerState.currentTrace;
                         double bestNewDistance = FuzzerState.currentSumOfBranchDistances;
 
                         // try X mutations of the current trace.
                         for(int j = 0; j < RANDOM_MUTATION_ATTEMPTS; j++) {
                                 FuzzerState.currentSumOfBranchDistances = 0;
-                                FuzzerState.currentNumberOfBranchesCovered = 0;
+                                FuzzerState.currentUniqueBranchesCovered.clear();
                                 List<String> fuzzedTrace = fuzz(DistanceTracker.inputSymbols, FuzzerState.currentTrace, j);
                                 DistanceTracker.runNextFuzzedSequence(fuzzedTrace.toArray(new String[0]));
                                 if (FuzzerState.currentSumOfBranchDistances < bestNewDistance) {
@@ -244,7 +243,7 @@ public class FuzzingLab {
                         if (FuzzerState.currentTrace.equals(bestNewTrace)) {
                                 System.out.println("!no new better fuzzed trace!");
                                 FuzzerState.currentSumOfBranchDistances = 0;
-                                FuzzerState.currentNumberOfBranchesCovered = 0;
+                                FuzzerState.currentUniqueBranchesCovered.clear();
                                 FuzzerState.currentTrace = generateRandomTrace(DistanceTracker.inputSymbols);
                                 DistanceTracker.runNextFuzzedSequence(FuzzerState.currentTrace.toArray(new String[0]));
                         } else {
