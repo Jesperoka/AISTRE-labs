@@ -24,16 +24,27 @@ public class FuzzingLab {
 
         // If a new branch is found, keep track of it and update the total branch distance.
         static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
-                if (uniqueVisitedBranches.add(new AbstractMap.SimpleEntry<Boolean,Integer>(value, line_nr))) {
-                        FuzzerState.currentSumOfBranchDistances += branchDistance(condition, value);
-                }
+                FuzzerState.currentSumOfBranchDistances += branchDistance(condition, value);
+                uniqueVisitedBranches.add(new AbstractMap.SimpleEntry<Boolean, Integer>(value, line_nr));
         }
 
         // Copies the input trace and changes one element to a random element of inputSymbols
-        static List<String> fuzz(String[] inputSymbols, List<String> trace){
+        static List<String> fuzz(String[] inputSymbols, List<String> trace, int pos){
                 List<String> fuzzedTrace = new ArrayList<>(trace);
-                fuzzedTrace.set(rng.nextInt(FuzzerState.currentTrace.size()), inputSymbols[rng.nextInt(inputSymbols.length)]);
+                fuzzedTrace.set(pos, inputSymbols[rng.nextInt(inputSymbols.length)]);
                 return fuzzedTrace;
+        }
+
+        /**
+         * Helper function for getting the value of Unary expressions.
+         * @param condition the MyVar object which holds the required int value.
+         * @return the int value of the condition
+         */
+        private static int getIntValue(MyVar condition) {
+                if(condition.type == TypeEnum.INT) {
+                        return condition.int_value;
+                }
+                return -getIntValue(condition.left);
         }
 
         /**
@@ -59,13 +70,13 @@ public class FuzzingLab {
                                 // If first string is empty
                                 if (i == 0)
                                         table[i][j] = j;
-                                        // If second string is empty
+                                // If second string is empty
                                 else if (j == 0)
                                         table[i][j] = i;
-                                        // If last characters are same
+                                // If last characters are same
                                 else if (leftString.charAt(i - 1) == rightString.charAt(j - 1))
                                         table[i][j] = table[i - 1][j - 1];
-                                        // If the last character is different
+                                // If the last character is different
                                 else
                                         table[i][j] = 1 + Math.min(table[i][j - 1], Math.min(table[i - 1][j], table[i - 1][j - 1]));
                         }
@@ -78,11 +89,13 @@ public class FuzzingLab {
                 switch (condition.left.type) {
                         case BOOL:
                                 return condition.left.value == condition.right.value ? 0 : 1;
+                        case UNARY:
                         case INT:
-                                return Math.abs(condition.left.int_value-condition.right.int_value);
+                                return Math.abs(getIntValue(condition.left)-getIntValue(condition.right));
                         case STRING:
                                 return editDistance(condition.left.str_value, condition.right.str_value);
                         default:
+                                System.err.println("Equality | Unknown type: " + condition.toString());
                                 return -1;
                 }
         }
@@ -93,25 +106,28 @@ public class FuzzingLab {
                         case BOOL:
                                 return condition.left.value != condition.right.value ? 0 : 1;
                         case INT:
-                                return condition.left.int_value != condition.right.int_value ? 0 : 1;
+                                return getIntValue(condition.left) != getIntValue(condition.right) ? 0 : 1;
                         case STRING:
                                 return condition.left.str_value.equals(condition.right.str_value) ? 1 : 0;
                         default:
+                                System.err.println("NotEquality | Unknown type: " + condition.toString());
                                 return -1;
                 }
         }
 
         static double branchDistanceLessThan(MyVar condition, int k) {
-                if (condition.left.type == TypeEnum.INT) {
-                        return condition.left.int_value < condition.right.int_value ? 0 : condition.left.int_value - condition.right.int_value + k;
+                if (condition.left.type == TypeEnum.INT || condition.left.type == TypeEnum.UNARY) {
+                        return getIntValue(condition.left) < getIntValue(condition.right) ? 0 : getIntValue(condition.left) - getIntValue(condition.right) + k;
                 }
+                System.err.println("LessThan | not an INT: " + condition.toString());
                 return -1;
         }
 
         static double branchDistanceGreaterThan(MyVar condition, int k) {
-                if (condition.left.type == TypeEnum.INT) {
-                        return condition.left.int_value > condition.right.int_value ? 0 : condition.right.int_value - condition.left.int_value + k;
+                if (condition.left.type == TypeEnum.INT || condition.left.type == TypeEnum.UNARY) {
+                        return getIntValue(condition.left) > getIntValue(condition.right) ? 0 : getIntValue(condition.right) - getIntValue(condition.left) + k;
                 }
+                System.err.println("GreaterThan | not an INT: " + condition.toString());
                 return -1;
         }
 
@@ -157,7 +173,7 @@ public class FuzzingLab {
                                 branchDistance = condition.value ? 1 : 0; 
                                 break;
                         case UNARY:
-                                branchDistance = condition.left.value ? 0 : 1;
+                                branchDistance = 1 - branchDistance(condition.left, value);
                                 break;
                         case BINARY:
                                 branchDistance = branchDistanceBinary(condition, value);
@@ -168,7 +184,7 @@ public class FuzzingLab {
                     }
 
                 if (branchDistance < 0) { 
-                        throw new IllegalArgumentException("Negative branch distance!\n"); 
+                        throw new IllegalArgumentException("Negative branch distance for condition:\n" + condition.toString() + "!\n");
                 }
 
                 branchDistance = branchDistance / (branchDistance + 1);
@@ -182,6 +198,7 @@ public class FuzzingLab {
         
         static void run() {
                 // Initialize
+                // put this to 1000 for testing purposes.
                 int maxIterations = 1000;
                 FuzzerState.currentTrace = generateRandomTrace(DistanceTracker.inputSymbols);
                 DistanceTracker.runNextFuzzedSequence(FuzzerState.currentTrace.toArray(new String[0]));
@@ -191,10 +208,10 @@ public class FuzzingLab {
                         List<String> bestNewTrace = FuzzerState.currentTrace;
                         double bestNewDistance = FuzzerState.currentSumOfBranchDistances;
 
-                        // try X random mutations of the current trace.
+                        // try X mutations of the current trace.
                         for(int j = 0; j < RANDOM_MUTATION_ATTEMPTS; j++) {
                                 FuzzerState.currentSumOfBranchDistances = 0;
-                                List<String> fuzzedTrace = fuzz(DistanceTracker.inputSymbols, FuzzerState.currentTrace);
+                                List<String> fuzzedTrace = fuzz(DistanceTracker.inputSymbols, FuzzerState.currentTrace, j);
                                 DistanceTracker.runNextFuzzedSequence(fuzzedTrace.toArray(new String[0]));
                                 if (FuzzerState.currentSumOfBranchDistances < bestNewDistance) {
                                         bestNewTrace = fuzzedTrace;
@@ -203,6 +220,7 @@ public class FuzzingLab {
                         }
                         // if no better trace was found, reset. Otherwise update the current trace.
                         if (FuzzerState.currentTrace.equals(bestNewTrace)) {
+                                System.out.println("!no new better fuzzed trace!");
                                 FuzzerState.currentSumOfBranchDistances = 0;
                                 FuzzerState.currentTrace = generateRandomTrace(DistanceTracker.inputSymbols);
                                 DistanceTracker.runNextFuzzedSequence(FuzzerState.currentTrace.toArray(new String[0]));
