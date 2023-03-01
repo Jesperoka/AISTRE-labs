@@ -1,14 +1,14 @@
-from os import path, exec
+from os import path, system
 from sys import argv
 from getopt import getopt
 
 NUM_PROBLEMS = 19
 
 def main(argv):
-    options, _ = getopt(argv, "pt:", ["problem=", "type="])
+    options, arguments = getopt(argv[1:], "pt:", ["problem=", "type="])
     commandParts = ["java -Xmx2500m -cp target/aistr.jar nl.tudelft.instrumentation.Main",
                     "--type=",                  # + "fuzzing" or "symbol" or "patching" 
-                    "--file=problem/Problem",   # + "1/Problem1.java"
+                    "--file=problems/Problem",   # + "1/Problem1.java"
                     "> instrumented/Problem"]   # + "1.java"
     
     instrumentAll = True
@@ -20,11 +20,12 @@ def main(argv):
            commandParts[1] += argument # could check if "fuzzing" or "symbol" or "patching" but w.e.
 
     def adjustCommandAndExecute(commandParts, i):
-        commandParts[2] = "".join(commandParts[2].split("m")[:-1].append("m"))
-        commandParts[2] += i
-        commandParts[3] = "".join(commandParts[2].split("m")[:-1].append("m"))
-        commandParts[3] += i
-        exec(" ".join(commandParts))
+        commandParts[2] += str(i) + "/Problem" + str(i) + ".java"
+        commandParts[3] += str(i) + ".java"
+        print("\nExecuting: " + " ".join(commandParts))
+        system(" ".join(commandParts))
+        commandParts[2] = commandParts[2].replace(str(i) + "/Problem" + str(i) + ".java", "") 
+        commandParts[3] = commandParts[3].replace(str(i) + ".java", "") 
 
     # Only instrument one file guard clause
     if not instrumentAll:
