@@ -9,6 +9,7 @@ ehthumbs.db
 Thumbs.db
 
 # Folders
+problems/
 instrumented/
 target/*
 !archive-tmp
