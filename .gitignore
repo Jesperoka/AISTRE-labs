@@ -1,3 +1,36 @@
+Skip to content
+Search or jump to…
+Pull requests
+Issues
+Codespaces
+Marketplace
+Explore
+ 
+@Jesperoka 
+Jesperoka
+/
+AISTRE-labs
+Private
+Fork your own copy of Jesperoka/AISTRE-labs
+Code
+Issues
+Pull requests
+1
+Actions
+Projects
+Security
+Insights
+Settings
+Beta Try the new code view
+AISTRE-labs/.gitignore
+@Jesperoka
+Jesperoka cleaning up how to deal with generated files
+Latest commit dfaf84c 3 days ago
+ History
+ 2 contributors
+@Jesperoka@cashenkes
+32 lines (28 sloc)  339 Bytes
+
 # OS generated files #
 ######################
 .DS_Store
@@ -7,6 +40,14 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Folders
+instrumented/
+target/*
+!archive-tmp
+!generated-sources
+!generated-test-sources
+!test-classes
 
 # Compiled source #
 ###################
@@ -22,3 +63,18 @@ Thumbs.db
 ############
 *.idea
 *.iml
+Footer
+© 2023 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Docs
+Contact GitHub
+Pricing
+API
+Training
+Blog
+About
+AISTRE-labs/.gitignore at LAB1_26_02_2023 · Jesperoka/AISTRE-labs
