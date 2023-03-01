@@ -5,8 +5,8 @@ from getopt import getopt
 NUM_PROBLEMS = 19
 
 def main(argv):
-    options, arguments = getopt(argv[1:], "pt:", ["problem=", "type="])
-    commandParts = ["java -Xmx2500m -cp target/aistr.jar nl.tudelft.instrumentation.Main",
+    options, arguments = getopt(argv[1:], "p:t:", ["problem=", "type="])
+    commandParts = ["java -Xmx6000m -cp target/aistr.jar nl.tudelft.instrumentation.Main",
                     "--type=",                  # + "fuzzing" or "symbol" or "patching" 
                     "--file=problems/Problem",   # + "1/Problem1.java"
                     "> instrumented/Problem"]   # + "1.java"
@@ -14,8 +14,13 @@ def main(argv):
     instrumentAll = True
     for option, argument in options:
         if option in ("-p", "--problem"):
-            instrumentAll = False   
-            problemNumber = int(argument)
+            if str(argument) in [str(x) for x in range(1, NUM_PROBLEMS + 1)]:
+                instrumentAll = False
+                problemNumber = int(argument)
+            elif str(argument).lower() == "all":
+                pass
+            else:
+                raise RuntimeError("Unknown or too large argument " + argument)
         elif option in ("-t", "--type"):
            commandParts[1] += argument # could check if "fuzzing" or "symbol" or "patching" but w.e.
 
