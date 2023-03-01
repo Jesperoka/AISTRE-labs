@@ -2,7 +2,7 @@ from os import path, system
 from sys import argv
 from getopt import getopt
 
-NUM_PROBLEMS = 19
+NUM_PROBLEMS = 18 #19 even the professors provided pre-instrumented and pre-compiled files don't include 19
 
 def main(argv):
     options, arguments = getopt(argv[1:], "p:t:", ["problem=", "type="])
