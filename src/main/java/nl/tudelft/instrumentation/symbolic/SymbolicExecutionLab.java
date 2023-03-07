@@ -13,10 +13,50 @@ import java.io.IOException;
  */
 public class SymbolicExecutionLab {
 
+    // Added as comment so I don't forget. TODO: adapt to this lab
+    /*#########################################################################################################################*/
+    /*#########################################################################################################################*/
+    // private static final int TRACE_LENGTH = 10;
+    // private static final int STRICT_INEQUALITY_MINIMUM_BRANCH_DISTANCE = 1;
+    // private static final int RANDOM_MUTATION_ATTEMPTS = 10;
+    // private static final long NANOSECS_PER_SEC = 1000l*1000*1000;
+    // private static final long FIVE_MIN_IN_NANOSECS = 5*60*NANOSECS_PER_SEC;
+    private static final int INITIAL_QUEUE_LENGTH = 11;
+
+    // private static final Random RNG = new Random();
+
+    // // Variables used by the fuzzer
+    // private static class FuzzerState {
+    //         static List<String> currentTrace = Arrays.asList("");
+    //         static double currentSumOfBranchDistances = 0;
+    //         static Set<Integer> currentUniqueBranchesCovered = new HashSet<>();
+    //         static boolean isFinished = false;
+    // }
+    // // Values output by the fuzzer at the end
+    // private static class FuzzerOutput {
+    //         static Set<String> triggeredErrorCodes = new HashSet<>();
+    //         static Set<AbstractMap.SimpleEntry<Boolean, Integer>> uniqueVisitedBranches = new HashSet<>();
+    //         static int mostBranchesCovered = 0;
+    //         static List<String> mostCoveringInput = Arrays.asList("");
+
+    //         static void display() {
+    //                 System.out.println("\nNumber of unique branches: " + FuzzerOutput.uniqueVisitedBranches.size() + "\n");
+    //                 System.out.println("Error codes triggered:\n" + FuzzerOutput.triggeredErrorCodes + "\n");
+    //                 System.out.println("The input covering the most branches was:\n" + FuzzerOutput.mostCoveringInput + "\nWith " + FuzzerOutput.mostBranchesCovered + " branches covered.\n");
+    //         }
+    // }
+    /*#########################################################################################################################*/
+    /*#########################################################################################################################*/
+
     static Random r = new Random();
     static Boolean isFinished = false;
     static List<String> currentTrace;
     static int traceLength = 10;
+    private static Context c = PathTracker.ctx;
+
+    // Strategy: set currentTrace to first element of satisfiableInputs, if no elements, generate random trace or mutate or something.
+    // Problem: how to sort satisfiableInputs? length (go for depth)?
+    private static PriorityQueue<LinkedList<String>> satisfiableInputs = new PriorityQueue<>(INITIAL_QUEUE_LENGTH, new InputComparator());
 
     static void initialize(String[] inputSymbols){
         // Initialise a random trace from the input symbols of the problem.
@@ -26,7 +66,6 @@ public class SymbolicExecutionLab {
     static MyVar createVar(String name, Expr value, Sort s){
         PRINT_FUNCTION_NAME();
         System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
-        Context c = PathTracker.ctx;
         /**
          * Create var, assign value and add to path constraint.
          * We show how to do it for creating new symbols, please
@@ -41,16 +80,13 @@ public class SymbolicExecutionLab {
     static MyVar createInput(String name, Expr value, Sort s){
         PRINT_FUNCTION_NAME();
         // Create an input var, these should be free variables!
-        Context c = PathTracker.ctx;
         Expr z3var = c.mkConst(c.mkSymbol(name + "_" + PathTracker.z3counter++), s);
-        // PathTracker.addToModel(c.mkEq(z3var, value)); // not sure about this, maybe add to PathTracker.inputs instead?
         return new MyVar(z3var, name);
     }
 
     static MyVar createBoolExpr(BoolExpr var, String operator){
         PRINT_FUNCTION_NAME();
         // Any unary expression (!)
-        Context c = PathTracker.ctx;
         switch (operator) {
             case "!":
                 return new MyVar(c.mkNot(var));
@@ -64,7 +100,6 @@ public class SymbolicExecutionLab {
     static MyVar createBoolExpr(BoolExpr left_var, BoolExpr right_var, String operator){
         PRINT_FUNCTION_NAME();
         // Any binary expression (&, &&, |, ||)
-        Context c = PathTracker.ctx;
         switch (operator) {
             case "&":
             case "&&":
@@ -80,7 +115,6 @@ public class SymbolicExecutionLab {
     static MyVar createIntExpr(IntExpr var, String operator){
         PRINT_FUNCTION_NAME();
         // Any unary expression (+, -)
-        Context c = PathTracker.ctx;
         switch (operator) {
             case "+":
                 return new MyVar(var);
@@ -94,8 +128,8 @@ public class SymbolicExecutionLab {
     static MyVar createIntExpr(IntExpr left_var, IntExpr right_var, String operator){
         PRINT_FUNCTION_NAME();
         // Any binary expression (+, -, /, *, %, ^, etc)
-        Context c = PathTracker.ctx;
         switch (operator) {
+
             // Arithmetic expressions
             case "+":
                 return new MyVar(c.mkAdd(left_var, right_var));
@@ -108,10 +142,14 @@ public class SymbolicExecutionLab {
             case "%":
                 return new MyVar(c.mkMod(left_var, right_var));
             case "^":
-                return new MyVar(c.mkPower(left_var, right_var));
+                System.out.println("That's interesting, we have an XOR");
+                return new MyVar(c.mkBV2Int(c.mkBVXOR(c.mkInt2BV(32, left_var), c.mkInt2BV(32, right_var)), true));
+
             // Boolean expressions
             case "==":
-                return new MyVar(c.mkEq(left_var, right_var));
+                return new MyVar(c.mkEq(left_var, right_var)); // TODO: maybe call .simplify() for some expressions
+            case "!=":
+                return new MyVar(c.mkNot(c.mkEq(left_var, right_var)));
             case "<":
                 return new MyVar(c.mkGt(left_var, right_var));
             case ">":
@@ -128,7 +166,6 @@ public class SymbolicExecutionLab {
     static MyVar createStringExpr(SeqExpr left_var, SeqExpr right_var, String operator){
         PRINT_FUNCTION_NAME();
         // We only support String.equals
-        Context c = PathTracker.ctx;
         switch (operator) {
             case "==":
                 return new MyVar(c.mkEq(left_var, right_var));
@@ -140,23 +177,46 @@ public class SymbolicExecutionLab {
     static void assign(MyVar var, String name, Expr value, Sort s){
         PRINT_FUNCTION_NAME();
         // All variable assignments, use single static assignment
-        Context c = PathTracker.ctx;
         Expr z3var = c.mkConst(c.mkSymbol(name + "_" + PathTracker.z3counter++), s);
         PathTracker.addToModel(c.mkEq(z3var, value));
     }
 
-    static void encounteredNewBranch(MyVar condition, boolean value, int line_nr){
+    static void encounteredNewBranch(MyVar condition, boolean value, int line_nr){  
         PRINT_FUNCTION_NAME();
-        // Call the solver
-        // Status staus = PathTracker.solver.check();
-        // System.out.println("Solver says: " + staus);
-        // System.out.println("Model: \n" + PathTracker.solver.getModel());
+        System.out.println("\n\nDEBUG:" + condition.z3var + "\n\n");
+        System.out.println("\nDEBUG:" + condition.z3var.isBool());
+        System.out.println("\nDEBUG:" + condition.z3var.getSort());
+
+        // PESUDOCODE:
+        /*
+         * if we the encountered branch has not been visited before do:
+         *      make sure condition is well formed (i.e. a BoolExpr)
+         *      add to the path constraints
+         *      (NOTE: the variables z3branches and z3model are just for printing, 
+         *      addToModel and addToBranches both add an expression to the solver object, aka. to the path constraint)
+         * otherwise do:
+         *      ??? reset? do nothing?
+         */
+
+        // Guard clauses
+        if (!condition.z3var.isBool()) { throw new IllegalArgumentException("\nUnexpected Expr Sort in encounteredNewBranch(): "+ condition.z3var.getSort()); }
+        // if (!unique.add()) {return;} // TODO: keep track of unique branches (like before or with more stuff)
+
+        // Main function body
+        int numInputsInQueue0 = satisfiableInputs.size();
+        PathTracker.solve((BoolExpr)condition.z3var, true); // check solvability, but does not permanently add to path constraint
+        if (satisfiableInputs.size() > numInputsInQueue0) {
+            PathTracker.addToBranches((BoolExpr)condition.z3var);
+        };
     }
 
     static void newSatisfiableInput(LinkedList<String> new_inputs) {
         PRINT_FUNCTION_NAME();
         // Hurray! found a new branch using these new inputs!
         System.out.println("newSatisfiableInput(new_inputs), new_inputs: " + new_inputs);
+
+        // Add to priority queue for use with 'smart' fuzzer
+        satisfiableInputs.add(new_inputs);
     }
 
     /**
@@ -166,14 +226,8 @@ public class SymbolicExecutionLab {
      */
     static List<String> fuzz(String[] inputSymbols){
         PRINT_FUNCTION_NAME();
-        /*
-         * Add here your code for fuzzing a new sequence for the RERS problem.
-         * You can guide your fuzzer to fuzz "smart" input sequences to cover
-         * more branches using symbolic execution. Right now we just generate
-         * a complete random sequence using the given input symbols. Please
-         * change it to your own code.
-         */
-        return generateRandomTrace(inputSymbols);
+        // Get first element of satisfiableInputs is it exists, otherwise generate random trace
+        return satisfiableInputs.peek() != null ? satisfiableInputs.poll() : generateRandomTrace(inputSymbols);
     }
 
     /**
@@ -216,4 +270,17 @@ public class SymbolicExecutionLab {
         System.out.println(Thread.currentThread().getStackTrace()[2].getMethodName());
     }
 
+}
+
+// EXTERNAL CLASSES
+
+// TODO: verify correctness (and think about if we want this kind of sorting)
+class InputComparator implements Comparator<LinkedList<String>>{
+             
+    // Overriding compare() method of Comparator for descending list length
+    public int compare(LinkedList<String> s1, LinkedList<String> s2) {
+        if (s1.size() < s2.size()) return 1;
+        else if (s1.size() > s2.size()) return -1;
+        else return 0;
+        }
 }
