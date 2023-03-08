@@ -4,7 +4,7 @@ import java.util.*;
 public class PatchingLab {
 
         // Constants
-        private static final int POPULATION_SIZE = 10;
+        private static final int POPULATION_SIZE = 10; // must be an even number
         private static final Random RNG = new Random();
 
         // EA state
