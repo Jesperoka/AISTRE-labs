@@ -4,7 +4,6 @@ import java.util.*;
 import com.microsoft.z3.*;
 import nl.tudelft.instrumentation.fuzzing.DistanceTracker;
 
-import java.util.Random;
 import java.io.FileWriter;
 import java.io.IOException;
 
@@ -28,14 +27,14 @@ public class SymbolicExecutionLab {
     // Variables used by the fuzzer
     private static class FuzzerState {
             static List<String> currentTrace = Arrays.asList("");
-            static Set<Pair<Boolean, Integer>> currentUniqueBranchesCovered = new HashSet<>();
+            static Set<MyPair<Boolean, Integer>> currentUniqueBranchesCovered = new HashSet<>();
             static PriorityQueue<LinkedList<String>> satisfiableInputs = new PriorityQueue<>(INITIAL_QUEUE_LENGTH, new InputComparator());
             static boolean isFinished = false;
     }
     // Values output by the fuzzer at the end
     private static class FuzzerOutput {
             static Set<String> triggeredErrorCodes = new HashSet<>();
-            static Set<Pair<Boolean, Integer>> uniqueVisitedBranches = new HashSet<>();
+            static Set<MyPair<Boolean, Integer>> uniqueVisitedBranches = new HashSet<>();
             static int mostBranchesCovered = 0;
             static List<String> mostCoveringInput = Arrays.asList("");
 
@@ -60,8 +59,13 @@ public class SymbolicExecutionLab {
     }
 
     // Create an input var, these should be free variables. TODO: verify correctness
-    static MyVar createInput(String name, Expr value, Sort s){
+    static MyVar createInput(String name, Expr value, Sort s){ // TODO: check for correct input
         PRINT_FUNCTION_NAME();
+        // System.out.println("DEBUG: "+PathTracker.inputSymbols.toString());
+        // System.out.println("DEBUG: "+value.toString());
+        // if(!Arrays.asList(PathTracker.inputSymbols).contains(value.toString())){
+        //     throw new IllegalArgumentException("\nUnexpected input not in inputSymbols");
+        // }
         Expr z3var = CTX.mkConst(CTX.mkSymbol(name + "_" + PathTracker.z3counter++), s);
         MyVar var = new MyVar(z3var, name);
         PathTracker.inputs.push(var); // TODO: unsure about this, but unless we do this PathTracker.inputs is always empty?
@@ -174,14 +178,14 @@ public class SymbolicExecutionLab {
     static void encounteredNewBranch(MyVar condition, boolean value, int lineNumber){  
         PRINT_FUNCTION_NAME();
         // Always do
-        FuzzerState.currentUniqueBranchesCovered.add(new Pair<Boolean, Integer>(value, lineNumber));
+        FuzzerState.currentUniqueBranchesCovered.add(new MyPair<Boolean, Integer>(value, lineNumber));
         if (FuzzerState.currentUniqueBranchesCovered.size() > FuzzerOutput.mostBranchesCovered) {
             FuzzerOutput.mostBranchesCovered = FuzzerState.currentUniqueBranchesCovered.size();
             FuzzerOutput.mostCoveringInput = FuzzerState.currentTrace;
         }
         // Guard clauses
         if (!condition.z3var.isBool()) { throw new IllegalArgumentException("\nUnexpected Expr Sort in encounteredNewBranch(): "+ condition.z3var.getSort()); }
-        if (!FuzzerOutput.uniqueVisitedBranches.add(new Pair<Boolean, Integer>(value, lineNumber))) {return;} // TODO: think about whether we want to do something if branch is not unique
+        if (!FuzzerOutput.uniqueVisitedBranches.add(new MyPair<Boolean, Integer>(value, lineNumber))) {return;} // TODO: think about whether we want to do something if branch is not unique
         
         // Conditionally do
         int numSatisfiableInputsPriorToSolving = FuzzerState.satisfiableInputs.size();
@@ -226,6 +230,7 @@ public class SymbolicExecutionLab {
             FuzzerState.currentUniqueBranchesCovered.clear();
             FuzzerState.currentTrace = fuzz(PathTracker.inputSymbols);
             PathTracker.reset(); // <-- THINK
+            System.out.println("DEBUG: "+FuzzerState.currentTrace);
             PathTracker.runNextFuzzedSequence(FuzzerState.currentTrace.toArray(new String[0]));
 
             FuzzerState.isFinished = (System.nanoTime() - startTime) < FIVE_MIN_IN_NANOSECS ? false : true;
@@ -260,63 +265,60 @@ public class SymbolicExecutionLab {
         }  
     }
 
-}
+    // TODO: verify correctness (and think about if we want this kind of sorting)
+    // Used to implement priority queue
+    private static class InputComparator implements Comparator<LinkedList<String>>{
+                
+        // Overriding compare() method of Comparator for descending list length
+        public int compare(LinkedList<String> s1, LinkedList<String> s2) {
+            if (s1.size() < s2.size()) return 1;
+            else if (s1.size() > s2.size()) return -1;
+            else return 0;
+            }
+    }
 
-// #################################### EXTERNAL CLASSES ####################################
+    // PAIR CLASS RIPPED AND ADAPTED FROM JAVAFX: http://www.java2s.com/example/java-src/pkg/javafx/util/pair-7999d.html
+    /**
+     * <p>A convenience class to represent name-value pairs.</p>
+     * @since JavaFX 2.0
+     */
+    private static class MyPair<K, V> implements Serializable {
+        private K key;
+        private V value;
+        public K getKey() {return key;}
+        public V getValue() {return value;}
 
-// TODO: verify correctness (and think about if we want this kind of sorting)
-// Used to implement priority queue
-class InputComparator implements Comparator<LinkedList<String>>{
-             
-    // Overriding compare() method of Comparator for descending list length
-    public int compare(LinkedList<String> s1, LinkedList<String> s2) {
-        if (s1.size() < s2.size()) return 1;
-        else if (s1.size() > s2.size()) return -1;
-        else return 0;
+        public MyPair(K key, V value) {
+            this.key = key;
+            this.value = value;
         }
-}
 
-// PAIR CLASS RIPPED AND ADAPTED FROM JAVAFX: http://www.java2s.com/example/java-src/pkg/javafx/util/pair-7999d.html
-/**
- * <p>A convenience class to represent name-value pairs.</p>
- * @since JavaFX 2.0
- */
-class Pair<K, V> implements Serializable {
-    private K key;
-    private V value;
-    public K getKey() {return key;}
-    public V getValue() {return value;}
-
-    public Pair(K key, V value) {
-        this.key = key;
-        this.value = value;
-    }
-
-    @Override
-    public String toString() {
-        return key + "=" + value;
-    }
-
-    @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 31 * hash + (key != null ? key.hashCode() : 0);
-        hash = 31 * hash + (value != null ? value.hashCode() : 0);
-        return hash;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o instanceof Pair<?,?>) {
-            Pair<?,?> pair = (Pair<?,?>) o;
-            if (key != null ? !key.equals(pair.key) : pair.key != null)
-                return false;
-            if (value != null ? !value.equals(pair.value) : pair.value != null)
-                return false;
-            return true;
+        @Override
+        public String toString() {
+            return key + "=" + value;
         }
-        return false;
+
+        @Override
+        public int hashCode() {
+            int hash = 7;
+            hash = 31 * hash + (key != null ? key.hashCode() : 0);
+            hash = 31 * hash + (value != null ? value.hashCode() : 0);
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o instanceof MyPair<?,?>) {
+                MyPair<?,?> pair = (MyPair<?,?>) o;
+                if (key != null ? !key.equals(pair.key) : pair.key != null)
+                    return false;
+                if (value != null ? !value.equals(pair.value) : pair.value != null)
+                    return false;
+                return true;
+            }
+            return false;
+        }
     }
 }

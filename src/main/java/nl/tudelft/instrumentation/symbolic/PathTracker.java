@@ -25,8 +25,8 @@ public class PathTracker {
     static CallableTraceRunner<Void> problem;
     static String[] inputSymbols;
     // Longest a single testcase is allowed to run
-    static final int timeoutMS = 1000;
-
+    static final int timeoutMS = 5000;
+    
     /**
      * Used to reset the constraints and everything else of z3 before running the next sequence.
      */
