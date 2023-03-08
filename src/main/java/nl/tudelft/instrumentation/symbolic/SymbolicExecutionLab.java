@@ -16,6 +16,7 @@ import java.io.Serializable;
  */
 public class SymbolicExecutionLab {
     // Constants
+    private static final boolean DEBUG = false;
     private static final double MAX_ITERATIONS = 1000; // double because then we can use infinity to run based on time only
     private static final int TRACE_LENGTH = 10;
     private static final long NANOSECS_PER_SEC = 1000l*1000*1000;
@@ -62,7 +63,9 @@ public class SymbolicExecutionLab {
     static MyVar createInput(String name, Expr value, Sort s){
         PRINT_FUNCTION_NAME();
         Expr z3var = CTX.mkConst(CTX.mkSymbol(name + "_" + PathTracker.z3counter++), s);
-        return new MyVar(z3var, name);
+        MyVar var = new MyVar(z3var, name);
+        PathTracker.inputs.push(var); // TODO: unsure about this, but unless we do this PathTracker.inputs is always empty?
+        return var;
     }
 
     // Creates a boolean expression with a unary operator
@@ -212,7 +215,7 @@ public class SymbolicExecutionLab {
 
     // TODO: function description
     static void run() {
-        PRINT_FUNCTION_NAME();
+        PRINT_FUNCTION_NAME(); printDebugWarning();
 
         int i = 0; 
         assert(Double.class.isInstance(MAX_ITERATIONS) && Integer.class.isInstance(i) && Integer.SIZE == 32 && Double.SIZE >= 32); // making sure int < double comparison is safe (enough)
@@ -242,7 +245,19 @@ public class SymbolicExecutionLab {
 
     // Helper for debugging (this implementation is not foolproof)
     public static void PRINT_FUNCTION_NAME(){
-        System.out.println(Thread.currentThread().getStackTrace()[2].getMethodName());
+        if(DEBUG) System.out.println(Thread.currentThread().getStackTrace()[2].getMethodName());;
+    }
+
+    // Helper for warning about debug printing
+    private static void printDebugWarning() {
+        if (DEBUG) {
+            System.err.println("\n\n\n\n\n\n\n\n\n\nDEBUG PRINTING IS ON, EXECUTION WILL BE SLOW...\n\n\n\n\n\n\n\n\n\n");
+            try {
+                Thread.sleep(3500);
+            } catch (InterruptedException e) {
+                    e.printStackTrace();
+            }
+        }  
     }
 
 }
