@@ -1,5 +1,6 @@
 package nl.tudelft.instrumentation.symbolic;
 
+import java.sql.Array;
 import java.util.*;
 import com.microsoft.z3.*;
 import nl.tudelft.instrumentation.fuzzing.DistanceTracker;
@@ -18,7 +19,7 @@ public class SymbolicExecutionLab {
     private static final boolean DEBUG = false;
     private static final double MAX_ITERATIONS = 1000; // double because then we can use infinity to run based on time only
     private static final int TRACE_LENGTH = 10;
-    private static final long NANOSECS_PER_SEC = 1000l*1000*1000;
+    private static final long NANOSECS_PER_SEC = 1000L*1000*1000;
     private static final long FIVE_MIN_IN_NANOSECS = 5*60*NANOSECS_PER_SEC;
     private static final int INITIAL_QUEUE_LENGTH = 11;
     private static final Random RNG = new Random();
@@ -26,7 +27,7 @@ public class SymbolicExecutionLab {
 
     // Variables used by the fuzzer
     private static class FuzzerState {
-            static List<String> currentTrace = Arrays.asList("");
+            static List<String> currentTrace = new ArrayList<>();
             static Set<MyPair<Boolean, Integer>> currentUniqueBranchesCovered = new HashSet<>();
             static PriorityQueue<LinkedList<String>> satisfiableInputs = new PriorityQueue<>(INITIAL_QUEUE_LENGTH, new InputComparator());
             static boolean isFinished = false;
@@ -36,7 +37,7 @@ public class SymbolicExecutionLab {
             static Set<String> triggeredErrorCodes = new HashSet<>();
             static Set<MyPair<Boolean, Integer>> uniqueVisitedBranches = new HashSet<>();
             static int mostBranchesCovered = 0;
-            static List<String> mostCoveringInput = Arrays.asList("");
+            static List<String> mostCoveringInput = new ArrayList<>();
 
             static void display() {
                     System.out.println("\nNumber of unique branches: " + FuzzerOutput.uniqueVisitedBranches.size() + "\n");
@@ -159,12 +160,10 @@ public class SymbolicExecutionLab {
     static MyVar createStringExpr(SeqExpr left_var, SeqExpr right_var, String operator){
         PRINT_FUNCTION_NAME();
         // We only support String.equals
-        switch (operator) {
-            case "==":
-                return new MyVar(CTX.mkEq(left_var, right_var));
-            default:
-                throw new IllegalArgumentException("\nUnexpected operator in createStringExpr(): "+ operator);
+        if ("==".equals(operator)) {
+            return new MyVar(CTX.mkEq(left_var, right_var));
         }
+        throw new IllegalArgumentException("\nUnexpected operator in createStringExpr(): " + operator);
     }
 
     // Assignment changes the z3var in a MyVar variable. Uses single static assignment. TODO: verify correctness
@@ -221,8 +220,10 @@ public class SymbolicExecutionLab {
     static void run() {
         PRINT_FUNCTION_NAME(); printDebugWarning();
 
-        int i = 0; 
-        assert(Double.class.isInstance(MAX_ITERATIONS) && Integer.class.isInstance(i) && Integer.SIZE == 32 && Double.SIZE >= 32); // making sure int < double comparison is safe (enough)
+        int i = 0;
+
+        // Integer != int and Double != double
+        //assert(Double.class.isInstance(MAX_ITERATIONS) && Integer.class.isInstance(i) && Integer.SIZE == 32 && Double.SIZE >= 32); // making sure int < double comparison is safe (enough)
         double startTime = System.nanoTime();
         while(!FuzzerState.isFinished && i < MAX_ITERATIONS) {
             // TODO: THINK, should we call PathTracker.reset() every iteration (the comment in PathTracker.java seems to imply this)?
@@ -233,7 +234,7 @@ public class SymbolicExecutionLab {
             System.out.println("DEBUG: "+FuzzerState.currentTrace);
             PathTracker.runNextFuzzedSequence(FuzzerState.currentTrace.toArray(new String[0]));
 
-            FuzzerState.isFinished = (System.nanoTime() - startTime) < FIVE_MIN_IN_NANOSECS ? false : true;
+            FuzzerState.isFinished = !((System.nanoTime() - startTime) < FIVE_MIN_IN_NANOSECS);
             i++;
         }
         FuzzerOutput.display();
@@ -271,9 +272,7 @@ public class SymbolicExecutionLab {
                 
         // Overriding compare() method of Comparator for descending list length
         public int compare(LinkedList<String> s1, LinkedList<String> s2) {
-            if (s1.size() < s2.size()) return 1;
-            else if (s1.size() > s2.size()) return -1;
-            else return 0;
+            return Integer.compare(s2.size(), s1.size());
             }
     }
 
@@ -283,8 +282,8 @@ public class SymbolicExecutionLab {
      * @since JavaFX 2.0
      */
     private static class MyPair<K, V> implements Serializable {
-        private K key;
-        private V value;
+        private final K key;
+        private final V value;
         public K getKey() {return key;}
         public V getValue() {return value;}
 
@@ -299,24 +298,14 @@ public class SymbolicExecutionLab {
         }
 
         @Override
-        public int hashCode() {
-            int hash = 7;
-            hash = 31 * hash + (key != null ? key.hashCode() : 0);
-            hash = 31 * hash + (value != null ? value.hashCode() : 0);
-            return hash;
-        }
-
-        @Override
         public boolean equals(Object o) {
             if (this == o)
                 return true;
             if (o instanceof MyPair<?,?>) {
                 MyPair<?,?> pair = (MyPair<?,?>) o;
-                if (key != null ? !key.equals(pair.key) : pair.key != null)
+                if (!Objects.equals(key, pair.key))
                     return false;
-                if (value != null ? !value.equals(pair.value) : pair.value != null)
-                    return false;
-                return true;
+                return Objects.equals(value, pair.value);
             }
             return false;
         }
