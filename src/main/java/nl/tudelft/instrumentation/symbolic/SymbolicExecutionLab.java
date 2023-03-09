@@ -18,24 +18,27 @@ public class SymbolicExecutionLab {
     // Constants
     private static final boolean DEBUG = false;
     private static final double MAX_ITERATIONS = 1000; // double because then we can use infinity to run based on time only
-    private static final int TRACE_LENGTH = 10;
+    private static int TRACE_LENGTH = 1;
     private static final long NANOSECS_PER_SEC = 1000L*1000*1000;
     private static final long FIVE_MIN_IN_NANOSECS = 5*60*NANOSECS_PER_SEC;
     private static final int INITIAL_QUEUE_LENGTH = 11;
     private static final Random RNG = new Random();
-    private static final Context CTX = PathTracker.ctx; // make final?
+    private static final Context CTX = PathTracker.ctx;
+
+    private static LinkedList<String> pot_new = new LinkedList<>();
+    private static boolean satisfied = false;
 
     // Variables used by the fuzzer
     private static class FuzzerState {
             static List<String> currentTrace = new ArrayList<>();
-            static Set<MyPair<Boolean, Integer>> currentUniqueBranchesCovered = new HashSet<>();
-            static PriorityQueue<LinkedList<String>> satisfiableInputs = new PriorityQueue<>(INITIAL_QUEUE_LENGTH, new InputComparator());
+            static Set<AbstractMap.SimpleEntry<Boolean, Integer>> currentUniqueBranchesCovered = new HashSet<>();
+            static Stack<LinkedList<String>> satisfiableInputs = new Stack<>();
             static boolean isFinished = false;
     }
     // Values output by the fuzzer at the end
     private static class FuzzerOutput {
             static Set<String> triggeredErrorCodes = new HashSet<>();
-            static Set<MyPair<Boolean, Integer>> uniqueVisitedBranches = new HashSet<>();
+            static Set<AbstractMap.SimpleEntry<Boolean, Integer>> uniqueVisitedBranches = new HashSet<>();
             static int mostBranchesCovered = 0;
             static List<String> mostCoveringInput = new ArrayList<>();
 
@@ -174,38 +177,56 @@ public class SymbolicExecutionLab {
     }
 
     // TODO: function description
-    static void encounteredNewBranch(MyVar condition, boolean value, int lineNumber){  
+    static void encounteredNewBranch(MyVar condition, boolean value, int lineNumber){
+
         PRINT_FUNCTION_NAME();
         // Always do
-        FuzzerState.currentUniqueBranchesCovered.add(new MyPair<Boolean, Integer>(value, lineNumber));
-        if (FuzzerState.currentUniqueBranchesCovered.size() > FuzzerOutput.mostBranchesCovered) {
-            FuzzerOutput.mostBranchesCovered = FuzzerState.currentUniqueBranchesCovered.size();
-            FuzzerOutput.mostCoveringInput = FuzzerState.currentTrace;
+        if(FuzzerState.currentUniqueBranchesCovered.add(new AbstractMap.SimpleEntry<>(value, lineNumber))) {
+            if (FuzzerState.currentUniqueBranchesCovered.size() > FuzzerOutput.mostBranchesCovered) {
+                FuzzerOutput.mostBranchesCovered = FuzzerState.currentUniqueBranchesCovered.size();
+                FuzzerOutput.mostCoveringInput = FuzzerState.currentTrace;
+            }
+
+            if (satisfied) {
+                satisfied = false;
+                //System.out.println("I am satisfied!");
+                FuzzerState.satisfiableInputs.push(pot_new);
+            }
         }
+        FuzzerOutput.uniqueVisitedBranches.add(new AbstractMap.SimpleEntry<>(value, lineNumber));
+
         // Guard clauses
-        if (!condition.z3var.isBool()) { throw new IllegalArgumentException("\nUnexpected Expr Sort in encounteredNewBranch(): "+ condition.z3var.getSort()); }
-        if (!FuzzerOutput.uniqueVisitedBranches.add(new MyPair<Boolean, Integer>(value, lineNumber))) {return;} // TODO: think about whether we want to do something if branch is not unique
-        
+        if (!condition.z3var.isBool()) {
+            throw new IllegalArgumentException("\nUnexpected Expr Sort in encounteredNewBranch(): "+ condition.z3var.getSort());
+        }
+        PathTracker.solve((BoolExpr)condition.z3var, false); // checks satisfiability, but does not permanently add to path constraint
+
+        /*
         // Conditionally do
         int numSatisfiableInputsPriorToSolving = FuzzerState.satisfiableInputs.size();
-        PathTracker.solve((BoolExpr)condition.z3var, true); // check solvability, but does not permanently add to path constraint
         if (FuzzerState.satisfiableInputs.size() > numSatisfiableInputsPriorToSolving) {
             PathTracker.addToBranches((BoolExpr)condition.z3var);
-        };
+        };*/
+
+
     }
 
     // Called when PathTracker.solve() finds a SATISFIABLE input. Adds found inputs to priority queue for use with fuzzer.
     static void newSatisfiableInput(LinkedList<String> new_inputs) {
+        /*
         PRINT_FUNCTION_NAME();
-        System.out.println("newSatisfiableInput(new_inputs), new_inputs: " + new_inputs);
-        FuzzerState.satisfiableInputs.add(new_inputs);
+        System.out.println("newSatisfiableInput(new_inputs), new_inputs: " + new_inputs);*/
+        //FuzzerState.satisfiableInputs.add(new_inputs);
+        pot_new = new_inputs;
+        satisfied = true;
+        //FuzzerState.newInputs.push(new_inputs);
     }
-
+    /*
     // Return first element of FuzzerState.satisfiableInputs is it exists, otherwise return randomly generated trace.
     static List<String> fuzz(String[] inputSymbols){
         PRINT_FUNCTION_NAME();
         return FuzzerState.satisfiableInputs.peek() != null ? FuzzerState.satisfiableInputs.poll() : generateRandomTrace(inputSymbols);
-    }
+    }*/
 
     // Generate a random trace from an array of symbols.
     static List<String> generateRandomTrace(String[] symbols) {
@@ -218,24 +239,32 @@ public class SymbolicExecutionLab {
 
     // TODO: function description
     static void run() {
-        PRINT_FUNCTION_NAME(); printDebugWarning();
+        PRINT_FUNCTION_NAME();
+        printDebugWarning();
 
-        int i = 0;
+        //int i = 0;
 
-        // Integer != int and Double != double
-        //assert(Double.class.isInstance(MAX_ITERATIONS) && Integer.class.isInstance(i) && Integer.SIZE == 32 && Double.SIZE >= 32); // making sure int < double comparison is safe (enough)
         double startTime = System.nanoTime();
-        while(!FuzzerState.isFinished && i < MAX_ITERATIONS) {
-            // TODO: THINK, should we call PathTracker.reset() every iteration (the comment in PathTracker.java seems to imply this)?
-            // or should we only call it if satisfiableInputs is empty? Something else?
-            FuzzerState.currentUniqueBranchesCovered.clear();
-            FuzzerState.currentTrace = fuzz(PathTracker.inputSymbols);
+        while(!FuzzerState.isFinished) {
+            System.out.println(FuzzerState.satisfiableInputs.size());
+            if (FuzzerState.satisfiableInputs.size() == 0) {
+                TRACE_LENGTH++;
+                FuzzerState.currentUniqueBranchesCovered.clear();
+                System.out.println("DEBUG: Exhausted options, thus increasing trace length!");
+                FuzzerState.currentTrace = generateRandomTrace(PathTracker.inputSymbols);
+            } else {
+                FuzzerState.currentTrace = FuzzerState.satisfiableInputs.pop();
+            }
+
             PathTracker.reset(); // <-- THINK
-            System.out.println("DEBUG: "+FuzzerState.currentTrace);
+            //System.out.println("DEBUG: "+FuzzerState.currentTrace);
             PathTracker.runNextFuzzedSequence(FuzzerState.currentTrace.toArray(new String[0]));
 
             FuzzerState.isFinished = !((System.nanoTime() - startTime) < FIVE_MIN_IN_NANOSECS);
-            i++;
+            if(TRACE_LENGTH > 30) {
+                FuzzerState.isFinished = true;
+            }
+            //i++;
         }
         FuzzerOutput.display();
     }
@@ -259,55 +288,10 @@ public class SymbolicExecutionLab {
         if (DEBUG) {
             System.err.println("\n\n\n\n\n\n\n\n\n\nDEBUG PRINTING IS ON, EXECUTION WILL BE SLOW...\n\n\n\n\n\n\n\n\n\n");
             try {
-                Thread.sleep(3500);
+                Thread.sleep(1500);
             } catch (InterruptedException e) {
                     e.printStackTrace();
             }
         }  
-    }
-
-    // TODO: verify correctness (and think about if we want this kind of sorting)
-    // Used to implement priority queue
-    private static class InputComparator implements Comparator<LinkedList<String>>{
-                
-        // Overriding compare() method of Comparator for descending list length
-        public int compare(LinkedList<String> s1, LinkedList<String> s2) {
-            return Integer.compare(s2.size(), s1.size());
-            }
-    }
-
-    // PAIR CLASS RIPPED AND ADAPTED FROM JAVAFX: http://www.java2s.com/example/java-src/pkg/javafx/util/pair-7999d.html
-    /**
-     * <p>A convenience class to represent name-value pairs.</p>
-     * @since JavaFX 2.0
-     */
-    private static class MyPair<K, V> implements Serializable {
-        private final K key;
-        private final V value;
-        public K getKey() {return key;}
-        public V getValue() {return value;}
-
-        public MyPair(K key, V value) {
-            this.key = key;
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            return key + "=" + value;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o instanceof MyPair<?,?>) {
-                MyPair<?,?> pair = (MyPair<?,?>) o;
-                if (!Objects.equals(key, pair.key))
-                    return false;
-                return Objects.equals(value, pair.value);
-            }
-            return false;
-        }
     }
 }
