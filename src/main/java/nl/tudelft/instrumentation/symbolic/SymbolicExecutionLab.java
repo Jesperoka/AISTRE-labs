@@ -17,11 +17,10 @@ import java.io.Serializable;
 public class SymbolicExecutionLab {
     // Constants
     private static final boolean DEBUG = false;
-    private static final double MAX_ITERATIONS = 1000; // double because then we can use infinity to run based on time only
-    private static int TRACE_LENGTH = 1;
+    // private static final double MAX_ITERATIONS = 1000; // double because then we can use infinity to run based on time only
+    private static int TRACE_LENGTH = 5;
     private static final long NANOSECS_PER_SEC = 1000L*1000*1000;
     private static final long FIVE_MIN_IN_NANOSECS = 5*60*NANOSECS_PER_SEC;
-    private static final int INITIAL_QUEUE_LENGTH = 11;
     private static final Random RNG = new Random();
     private static final Context CTX = PathTracker.ctx;
 
@@ -30,7 +29,7 @@ public class SymbolicExecutionLab {
 
     // Variables used by the fuzzer
     private static class FuzzerState {
-            static List<String> currentTrace = new ArrayList<>();
+            static List<String> currentTrace = new LinkedList<>();
             static Set<AbstractMap.SimpleEntry<Boolean, Integer>> currentUniqueBranchesCovered = new HashSet<>();
             static Stack<LinkedList<String>> satisfiableInputs = new Stack<>();
             static boolean isFinished = false;
@@ -40,18 +39,13 @@ public class SymbolicExecutionLab {
             static Set<String> triggeredErrorCodes = new HashSet<>();
             static Set<AbstractMap.SimpleEntry<Boolean, Integer>> uniqueVisitedBranches = new HashSet<>();
             static int mostBranchesCovered = 0;
-            static List<String> mostCoveringInput = new ArrayList<>();
+            static List<String> mostCoveringInput = new LinkedList<>();
 
             static void display() {
                     System.out.println("\nNumber of unique branches: " + FuzzerOutput.uniqueVisitedBranches.size() + "\n");
                     System.out.println("Error codes triggered:\n" + FuzzerOutput.triggeredErrorCodes + "\n");
                     System.out.println("The input covering the most branches was:\n" + FuzzerOutput.mostCoveringInput + "\nWith " + FuzzerOutput.mostBranchesCovered + " branches covered.\n");
             }
-    }
-
-    static void initialize(String[] inputSymbols){
-        // Initialise a random trace from the input symbols of the problem.
-        FuzzerState.currentTrace = generateRandomTrace(inputSymbols);
     }
 
     // Create var, assign value and add to path constraint.
@@ -72,6 +66,13 @@ public class SymbolicExecutionLab {
         // }
         Expr z3var = CTX.mkConst(CTX.mkSymbol(name + "_" + PathTracker.z3counter++), s);
         MyVar var = new MyVar(z3var, name);
+        /// TESTING
+        BoolExpr constraint = CTX.mkFalse();
+        for (String input: PathTracker.inputSymbols) {
+            constraint = CTX.mkOr(CTX.mkEq(z3var, CTX.mkString(input)), constraint);
+        }
+        PathTracker.addToModel(constraint);
+        /// TESTING
         PathTracker.inputs.push(var); // TODO: unsure about this, but unless we do this PathTracker.inputs is always empty?
         return var;
     }
@@ -176,7 +177,12 @@ public class SymbolicExecutionLab {
         PathTracker.addToModel(CTX.mkEq(var.z3var, value));
     }
 
-    // TODO: function description
+    /**
+     * This function is called whenever the executed program encounters a branch.
+     * @param condition The condition of the encountered branch
+     * @param value The actual value the branch evaluated to.
+     * @param lineNumber The linenumber that the branch occurred at.
+     */
     static void encounteredNewBranch(MyVar condition, boolean value, int lineNumber){
 
         PRINT_FUNCTION_NAME();
@@ -189,8 +195,7 @@ public class SymbolicExecutionLab {
 
             if (satisfied) {
                 satisfied = false;
-                //System.out.println("I am satisfied!");
-                FuzzerState.satisfiableInputs.push(pot_new);
+                FuzzerState.satisfiableInputs.push((LinkedList<String>) fillTrace(pot_new, PathTracker.inputSymbols));
             }
         }
         FuzzerOutput.uniqueVisitedBranches.add(new AbstractMap.SimpleEntry<>(value, lineNumber));
@@ -200,35 +205,36 @@ public class SymbolicExecutionLab {
             throw new IllegalArgumentException("\nUnexpected Expr Sort in encounteredNewBranch(): "+ condition.z3var.getSort());
         }
         PathTracker.solve((BoolExpr)condition.z3var, false); // checks satisfiability, but does not permanently add to path constraint
-
-        /*
-        // Conditionally do
-        int numSatisfiableInputsPriorToSolving = FuzzerState.satisfiableInputs.size();
-        if (FuzzerState.satisfiableInputs.size() > numSatisfiableInputsPriorToSolving) {
-            PathTracker.addToBranches((BoolExpr)condition.z3var);
-        };*/
-
-
     }
 
-    // Called when PathTracker.solve() finds a SATISFIABLE input. Adds found inputs to priority queue for use with fuzzer.
+    /**
+     * Called when the solver finds a trace that satisfies the branch.
+     * @param new_inputs when these inputs are given to the program then it reaches the new branch.
+     */
     static void newSatisfiableInput(LinkedList<String> new_inputs) {
-        /*
         PRINT_FUNCTION_NAME();
-        System.out.println("newSatisfiableInput(new_inputs), new_inputs: " + new_inputs);*/
-        //FuzzerState.satisfiableInputs.add(new_inputs);
         pot_new = new_inputs;
         satisfied = true;
-        //FuzzerState.newInputs.push(new_inputs);
     }
-    /*
-    // Return first element of FuzzerState.satisfiableInputs is it exists, otherwise return randomly generated trace.
-    static List<String> fuzz(String[] inputSymbols){
-        PRINT_FUNCTION_NAME();
-        return FuzzerState.satisfiableInputs.peek() != null ? FuzzerState.satisfiableInputs.poll() : generateRandomTrace(inputSymbols);
-    }*/
 
-    // Generate a random trace from an array of symbols.
+    /**
+     * This method fills a trace given back by the solver up till the trace length to potentially trigger more branches.
+     * @param newTrace The trace to be filled.
+     * @param symbols THe set of allowed inputsymbols
+     * @return the trace with potentially added characters.
+     */
+    static List<String> fillTrace(List<String> newTrace, String[] symbols) {
+        while (newTrace.size() < TRACE_LENGTH) {
+            newTrace.add(symbols[RNG.nextInt(symbols.length)]);
+        }
+        return newTrace;
+    }
+
+    /**
+     * Uses the set of input symbols and the trace length to generate a new random trace.
+     * @param symbols the set of allowed input symbols
+     * @return a trace of length TRACELENGTH that contains random input symbols
+     */
     static List<String> generateRandomTrace(String[] symbols) {
         ArrayList<String> trace = new ArrayList<>();
         for (int i = 0; i < TRACE_LENGTH; i++) {
@@ -237,16 +243,16 @@ public class SymbolicExecutionLab {
         return trace;
     }
 
-    // TODO: function description
+    /**
+     * This method runs the symbolic execution.
+     */
     static void run() {
         PRINT_FUNCTION_NAME();
         printDebugWarning();
 
-        //int i = 0;
-
         double startTime = System.nanoTime();
         while(!FuzzerState.isFinished) {
-            System.out.println(FuzzerState.satisfiableInputs.size());
+            // If the stack is empty then increase the trace length by one and try again.
             if (FuzzerState.satisfiableInputs.size() == 0) {
                 TRACE_LENGTH++;
                 FuzzerState.currentUniqueBranchesCovered.clear();
@@ -255,23 +261,25 @@ public class SymbolicExecutionLab {
             } else {
                 FuzzerState.currentTrace = FuzzerState.satisfiableInputs.pop();
             }
-
-            PathTracker.reset(); // <-- THINK
+            // Reset the variables for the next sequence.
+            PathTracker.reset();
             //System.out.println("DEBUG: "+FuzzerState.currentTrace);
             PathTracker.runNextFuzzedSequence(FuzzerState.currentTrace.toArray(new String[0]));
 
             FuzzerState.isFinished = !((System.nanoTime() - startTime) < FIVE_MIN_IN_NANOSECS);
-            if(TRACE_LENGTH > 30) {
-                FuzzerState.isFinished = true;
-            }
-            //i++;
+            //if(TRACE_LENGTH > 50) {
+            //    System.out.println("FIN: Maximum trace length reached!");
+            //    FuzzerState.isFinished = true;
+            //}
         }
         FuzzerOutput.display();
     }
 
     // Method that is used for catching the output from standard out.
     public static void output(String out){
-        System.out.println(out);
+        if(!out.contains("no transition")) {
+            System.out.println(out);
+        }
         String[] splitOutput = out.split("error_", 2);
         if (splitOutput.length == 2) {
                 FuzzerOutput.triggeredErrorCodes.add(splitOutput[1]);
