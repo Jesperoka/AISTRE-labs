@@ -20,7 +20,7 @@ public class SymbolicExecutionLab {
     private static final double MAX_ITERATIONS = Double.POSITIVE_INFINITY; // double because then we can use infinity to run based on time only
     private static final int INITIAL_TRACE_LENGTH = 0;
     private static final long NANOSECS_PER_SEC = 1000L*1000*1000;
-    private static final long FIVE_MIN_IN_NANOSECS = 1*60*NANOSECS_PER_SEC;
+    private static final long FIVE_MIN_IN_NANOSECS = 6*60*NANOSECS_PER_SEC;
     private static final Random RNG = new Random();
     private static final Context CTX = PathTracker.ctx;
 
@@ -282,6 +282,7 @@ public class SymbolicExecutionLab {
 
             FuzzerState.isFinished = ((System.nanoTime() - startTime) >= FIVE_MIN_IN_NANOSECS);
             i++;
+            System.gc(); // Trying fix for timeout
         }
         FuzzerOutput.display();
     }
