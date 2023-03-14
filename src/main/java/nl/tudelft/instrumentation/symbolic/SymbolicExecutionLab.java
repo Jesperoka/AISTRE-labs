@@ -222,7 +222,9 @@ public class SymbolicExecutionLab {
     static void newSatisfiableInput(LinkedList<String> new_inputs) {
         PRINT_FUNCTION_NAME();
         // increment trace length here as well? ( FuzzerState.currentTraceLength += 1; )
+        FuzzerState.currentTraceLength++; // TESTING OUT SUGGESTION FROM MATTERMOST
         FuzzerState.satisfiableInputs.push((LinkedList<String>) fillTrace(new_inputs, PathTracker.inputSymbols));
+        FuzzerState.currentTraceLength--; // TESTING (there was no difference with or without this)
     }
 
     /**
