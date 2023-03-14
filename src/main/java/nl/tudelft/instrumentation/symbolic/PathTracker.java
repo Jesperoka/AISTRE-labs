@@ -25,7 +25,7 @@ public class PathTracker {
     static CallableTraceRunner<Void> problem;
     static String[] inputSymbols;
     // Longest a single testcase is allowed to run
-    static final int timeoutMS = 60*1000;
+    static final int timeoutMS = 10*1000;
     
     /**
      * Used to reset the constraints and everything else of z3 before running the next sequence.
@@ -35,7 +35,10 @@ public class PathTracker {
         z3model    = ctx.mkTrue();
         z3branches = ctx.mkTrue();
         inputs.clear();
-        solver = ctx.mkSolver();
+        solver.reset();
+        Params params = ctx.mkParams();
+        params.add("timeout", timeoutMS);
+        solver.setParameters(params);
     }
 
 
@@ -262,9 +265,9 @@ public class PathTracker {
     public static void runNextFuzzedSequence(String[] sequence) {
         problem.setSequence(sequence);
         final Future handler = executor.submit(problem);
-        executor.schedule(() -> {
-            handler.cancel(true);
-        }, timeoutMS, TimeUnit.MILLISECONDS);
+        // executor.schedule(() -> {
+        //     handler.cancel(true);
+        // }, timeoutMS, TimeUnit.MILLISECONDS);
 
         // Wait for it to be completed
         try {
