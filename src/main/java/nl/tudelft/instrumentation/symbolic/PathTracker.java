@@ -25,8 +25,8 @@ public class PathTracker {
     static CallableTraceRunner<Void> problem;
     static String[] inputSymbols;
     // Longest a single testcase is allowed to run
-    static final int timeoutMS = 1000;
-
+    static final int timeoutMS = 10*1000;
+    
     /**
      * Used to reset the constraints and everything else of z3 before running the next sequence.
      */
@@ -35,7 +35,10 @@ public class PathTracker {
         z3model    = ctx.mkTrue();
         z3branches = ctx.mkTrue();
         inputs.clear();
-        solver = ctx.mkSolver();
+        solver.reset();
+        Params params = ctx.mkParams();
+        params.add("timeout", timeoutMS);
+        solver.setParameters(params);
     }
 
 
@@ -58,7 +61,7 @@ public class PathTracker {
      * @param printModel boolean value that specifies whether the path constraint should
      *                   be printed in the terminal or not.
      */
-    public static void solve(BoolExpr new_branch, boolean printModel){
+    public static Status solve(BoolExpr new_branch, boolean printModel){
         // Save the state of the solver before adding the branch constraint
         solver.push();
         solver.add(new_branch);
@@ -72,19 +75,20 @@ public class PathTracker {
             System.out.println(new_branch);
         }
 
+        Status solverStatus = solver.check();
         if(solver.check() == Status.SATISFIABLE){
-            //System.out.println("satisfiable");
             Model m = solver.getModel();
             LinkedList<String> new_inputs = new LinkedList<String>();
             for(MyVar v : PathTracker.inputs){
                 new_inputs.add(m.evaluate(v.z3var, true).toString());
             }
-            SymbolicExecutionLab.newSatisfiableInput(new_inputs);
+            SymbolicExecutionLab.newSatisfiableInput(new_inputs); // <---- here is when
         } else {
             //System.out.println("unsatisfiable");
         }
         // Restore the state of the solver to remove the branch constraint
         solver.pop();
+        return solverStatus;
     }
 
     // Making temporary variables, i.e., within if-conditions
@@ -261,9 +265,9 @@ public class PathTracker {
     public static void runNextFuzzedSequence(String[] sequence) {
         problem.setSequence(sequence);
         final Future handler = executor.submit(problem);
-        executor.schedule(() -> {
-            handler.cancel(true);
-        }, timeoutMS, TimeUnit.MILLISECONDS);
+        // executor.schedule(() -> {
+        //     handler.cancel(true);
+        // }, timeoutMS, TimeUnit.MILLISECONDS);
 
         // Wait for it to be completed
         try {
