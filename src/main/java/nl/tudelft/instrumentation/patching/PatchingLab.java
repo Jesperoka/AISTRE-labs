@@ -3,16 +3,20 @@ import java.util.*;
 
 public class PatchingLab {
 
-        static Random r = new Random();
-        static boolean isFinished = false;
+        // Constants
+        private static final Random RNG = new Random();
 
-        static void initialize(){
-                // initialize the population based on OperatorTracker.operators
+        // EA state
+        private static class Individual {
+                String[] operators = new String[OperatorTracker.operators.length];
+                double fitnessScore = 0.0;
         }
+        private static List<Individual> population;
 
         // encounteredOperator gets called for each operator encountered while running tests
         static boolean encounteredOperator(String operator, int left, int right, int operator_nr){
                 // Do something useful
+                
 
                 String replacement = OperatorTracker.operators[operator_nr];
                 if(replacement.equals("!=")) return left != right;
@@ -32,6 +36,40 @@ public class PatchingLab {
                 if(replacement.equals("==")) return left == right;
                 return false;
         }
+        
+        static double computeFitnessScore(List<Boolean> testReturns) {
+                assert(testReturns.size() > 0);
+                int trueReturns = 0;
+                for (Boolean b: testReturns) {
+                        trueReturns += b ? 1 : 0;
+                }
+                return trueReturns/(testReturns.size());
+        }
+
+        private static void initialize(){
+                // initialize the population based on OperatorTracker.operators
+                // OperatorTracker.operators;
+                
+        }
+
+        private static void selection() {
+                // Iterate over population
+                while (!population.isEmpty()) {
+                        Individual first = population.remove(RNG.nextInt(0, population.size()));
+                        Individual second = population.remove(RNG.nextInt(0, population.size()));
+                        
+                }
+                // Compute fitness in some scheme
+        }
+
+        private static void crossover() {
+                // Parse 2 indivuals in population
+                // Combine
+        }
+
+        private static void mutation() {
+                // Find bad lines -> mutate them (probably)
+        }
 
         static void run() {
                 initialize();
@@ -44,9 +82,20 @@ public class PatchingLab {
                 OperatorTracker.runAllTests();
                 System.out.println("Entered run");
 
+                // Initial population
+
+                
                 // Loop here, running your genetic algorithm until you think it is done
+                boolean isFinished = false;
                 while (!isFinished) {
-                        // Do things!
+
+                        // Selection
+
+                        // Crossover
+
+                        // Mutation
+
+
                         try {
                                 System.out.println("Woohoo, looping!");
                                 Thread.sleep(1000);
@@ -60,6 +109,6 @@ public class PatchingLab {
                 // This will get called when the problem code tries to print things,
                 // the prints in the original code have been removed for your convenience
 
-                // System.out.println(out);
+                System.out.println(out);
         }
 }
