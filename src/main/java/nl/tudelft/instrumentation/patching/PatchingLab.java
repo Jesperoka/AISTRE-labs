@@ -129,9 +129,39 @@ public class PatchingLab {
                 population.addAll(winners);
         }
 
+        /**
+         * Method that takes the population left after selection and generates new individuals based on the living individuals.
+         */
         private static void crossover() {
-                // Parse 2 indivuals in population
-                // Combine
+                // TODO make create a better method for this.
+                //  - Ensure it cannot take the same one twice.
+                //  - Check if you need to ignore the newly added individuals.
+                //  - Check if the size of the population should stay equal.
+                population.add(singlePointCrossover(population.get(RNG.nextInt(population.size())), population.get(RNG.nextInt(population.size()))));
+        }
+
+        /**
+         * Method that does single point crossover between two individuals
+         * @param A The first individual
+         * @param B The second individual
+         * @return Returns a new individual based on the parents A and B.
+         */
+        private static Individual singlePointCrossover(Individual A, Individual B) {
+                // TODO check if we want to set this point at the halfway mark.
+                return singlePointCrossover(A, B, A.operators.length/2);
+        }
+
+        // For if you want to set the crossoverPoint yourself.
+        // TODO check if this is necessary.
+        private static Individual singlePointCrossover(Individual A, Individual B, int crossoverPoint) {
+                assert(crossoverPoint > 0 && crossoverPoint < A.operators.length) : "SPC: The crossoverPoint should be within the array for it to make sense.";
+                assert(A.operators.length == B.operators.length) : "SPC: Both individuals should have the same operator list size.";
+                Individual n = new Individual();
+                n.operators = new String[A.operators.length];
+                for(int j = 0; j < n.operators.length; j++) {
+                        n.operators[j] = j > crossoverPoint ? A.operators[j] : B.operators[j];
+                }
+                return n;
         }
 
         private static void mutation() {
