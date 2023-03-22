@@ -1,11 +1,15 @@
 package nl.tudelft.instrumentation.patching;
 import java.util.*;
 
+import com.google.common.reflect.TypeToken;
+
 public class PatchingLab {
 
         // Constants
         private static final int POPULATION_SIZE = 10; // must be an even number
         private static final String[] POSSIBLE_OPERATORS = {"!=", "==", "<", ">", "<=", ">="};
+        private static final int NUM_TOP_TARANTULA_SCORES = 3; 
+        private static final int NUM_MUTATIONS = 2;
         private static final Random RNG = new Random();
 
         // EA state
@@ -13,6 +17,12 @@ public class PatchingLab {
                 String[] operators = new String[OperatorTracker.operators.length];
                 double fitnessScore = 0.0;
         }
+        private static enum typeEnum {
+                INT,
+                BOOL,
+                UNDEFINED
+        }
+        private static typeEnum[] operatorTypes = new typeEnum[OperatorTracker.operators.length];
         private static List<Individual> population;
         private static Map<Integer, List<Integer>> currentTestSpectrum = new HashMap<>(); // scary global variable updated by functions based on async behavior
 
@@ -32,6 +42,7 @@ public class PatchingLab {
         // encounteredOperator gets called for each operator encountered while running tests
         static boolean encounteredOperator(String operator, int left, int right, int operator_nr) {
                 // Do something useful
+                if (operatorTypes[operator_nr] == typeEnum.UNDEFINED) {operatorTypes[operator_nr] = typeEnum.INT;}
                 mapCurrentTestToOperator(operator_nr);
 
                 String replacement = OperatorTracker.operators[operator_nr];
@@ -46,6 +57,7 @@ public class PatchingLab {
 
         static boolean encounteredOperator(String operator, boolean left, boolean right, int operator_nr) {
                 // Do something useful
+                if (operatorTypes[operator_nr] == typeEnum.UNDEFINED) {operatorTypes[operator_nr] = typeEnum.BOOL;}
                 mapCurrentTestToOperator(operator_nr);
 
                 String replacement = OperatorTracker.operators[operator_nr];
@@ -61,7 +73,7 @@ public class PatchingLab {
                 for (Boolean result : testResults) {
                         int dummyVar = result ? totalResults[PASS]++ : totalResults[FAIL]++;
                 }
-                return positiveWeight*totalResults[PASS] - negativeWeight*totalResults[PASS];
+                return positiveWeight*totalResults[PASS] - negativeWeight*totalResults[FAIL];
         }
 
         private static int[] countLineResults(List<Boolean> testResults, List<Integer> coveringTests) {
@@ -78,29 +90,53 @@ public class PatchingLab {
                 double[] scores = new double[numOperators];
                 for (int operatorNumber = 0; operatorNumber < numOperators; operatorNumber++) {
                         int[] results = countLineResults(testResults, testSpectrum.get(operatorNumber));
+                        if (results[PASS] == 0 && results[FAIL] == 0) {scores[operatorNumber] = -1;}
                         scores[operatorNumber] = results[FAIL] / (results[PASS] + results[FAIL]);
                 }
                 return scores;
         }
 
         // Mutate a single individual
-        private static String[] mutate(int[] mutationIndices, String[] operators, String[] possibleOperators) {
-                // TODO: implement
+        private static String[] mutate(int[] mutationIndices, String[] operators) {
+                int length = 0;
+                for (int idx : mutationIndices) {
+                        if (operatorTypes[idx] == typeEnum.INT) {length = POSSIBLE_OPERATORS.length;}
+                        else if (operatorTypes[idx] == typeEnum.BOOL) {length = 2;} 
+                        else { throw new IllegalArgumentException("Cannot mutate UNDEFINED operator type"); }
+                        operators[idx] = POSSIBLE_OPERATORS[RNG.nextInt(length)];
+                }
                 return operators;
         }
 
+        private static int indexOf(double value, double[] array) {
+                for (int i = 0; i < array.length; i++){
+                        if (value == array[i]) {return i;}
+                }
+                return -1;
+        }
+
+        private static int[] selectMutationIndices(double[] tarantulaScores) {
+                int[] mutationIndices = new int[NUM_MUTATIONS];
+                double[] sortedtarantulaScores = Arrays.copyOf(tarantulaScores, tarantulaScores.length);
+                Arrays.sort(sortedtarantulaScores);
+                sortedtarantulaScores = Arrays.copyOfRange(sortedtarantulaScores, 0, NUM_TOP_TARANTULA_SCORES);
+                Collections.shuffle(Arrays.asList(sortedtarantulaScores));
+                
+                for (int i = 0; i < mutationIndices.length; i++) {
+                        mutationIndices[i] = indexOf(sortedtarantulaScores[sortedtarantulaScores.length - i - 1], tarantulaScores);
+                }
+                return mutationIndices;
+        }       
+
         private static void initialize(){
                 // initialize the population based on most suspicious OperatorTracker.operators
+                java.util.Arrays.fill(operatorTypes, typeEnum.UNDEFINED);
                 List<Boolean> testResults = runTests(OperatorTracker.operators);
                 double[] tarantulaScores = computeTarantulaScores(testResults, OperatorTracker.operators.length, currentTestSpectrum);
-
-                // TODO: sort indices based on tarantula scores
-                // -> randomly select K of the top N operators 
-                // -> randomly mutate those operator (by passing the index list to mutate())
-                int[] mutationIndices = {0, 1, 2, 3}; // TODO: <<<--- TEMP
+                int[] mutationIndices = selectMutationIndices(tarantulaScores);
 
                 for (int i = 0; i < POPULATION_SIZE; i++) {
-                        String[] initialOperators = mutate(mutationIndices, OperatorTracker.operators, POSSIBLE_OPERATORS);
+                        String[] initialOperators = mutate(mutationIndices, OperatorTracker.operators);
                         population.add(new Individual() {{operators = initialOperators;}});      
                 }
         }
@@ -137,6 +173,7 @@ public class PatchingLab {
                 //  - Ensure it cannot take the same one twice.
                 //  - Check if you need to ignore the newly added individuals.
                 //  - Check if the size of the population should stay equal.
+
                 population.add(singlePointCrossover(population.get(RNG.nextInt(population.size())), population.get(RNG.nextInt(population.size()))));
         }
 
@@ -166,8 +203,12 @@ public class PatchingLab {
 
         private static void mutation() {
                 // Find bad lines with tarantula, same as in first part of initialize, which means we can make it a function.
-
-                // subroutine |   mutate(mutationIndices, operators, possibleOperators) -> mutatedOperators   | mutates a single individual
+                
+                // for (int i = 0; i < POPULATION_SIZE; i++) {
+                //         String[] initialOperators = mutate(mutationIndices, OperatorTracker.operators);
+                //         population.add(new Individual() {{operators = initialOperators;}});      
+                // }
+                // broutine |   mutate(mutationIndices, operators, possibleOperators) -> mutatedOperators   | mutates a single individual
 
         }
 
@@ -205,6 +246,7 @@ public class PatchingLab {
                                 e.printStackTrace();
                         }
                 }
+
         }
 
         public static void output(String out){
