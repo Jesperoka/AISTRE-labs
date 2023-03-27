@@ -213,21 +213,11 @@ public class PatchingLab {
         }
 
         static void run() {
-                initialize();
-
-                // Place the code here you want to run once:
-                // You want to change this of course, this is just an example
-                // Tests are loaded from resources/rers2020_test_cases. If you are you are using
-                // your own tests, make sure you put them in the same folder with the same
-                // naming convention.
-                OperatorTracker.runAllTests();
-                System.out.println("Entered run");
+                boolean isFinished = false;
 
                 // Initial population
+                initialize();
 
-                
-                // Loop here, running your genetic algorithm until you think it is done
-                boolean isFinished = false;
                 while (!isFinished) {
 
                         // Selection
@@ -238,16 +228,11 @@ public class PatchingLab {
 
                         // Mutation
                         mutation();
-
-                        try {
-                                System.out.println("Woohoo, looping!");
-                                Thread.sleep(1000);
-                        } catch (InterruptedException e) {
-                                e.printStackTrace();
-                        }
                 }
 
         }
+
+
 
         public static void output(String out){
                 // This will get called when the problem code tries to print things,
