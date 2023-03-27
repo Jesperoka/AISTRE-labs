@@ -7,9 +7,9 @@ public class PatchingLab {
 
         // Constants
         private static final int POPULATION_SIZE = 10; // must be an even number
-        private static final String[] POSSIBLE_OPERATORS = {"!=", "==", "<", ">", "<=", ">="};
-        private static final int NUM_TOP_TARANTULA_SCORES = 3; 
+        private static final int NUM_TOP_TARANTULA_SCORES = 3; // must be >= NUM_MUTATIONS
         private static final int NUM_MUTATIONS = 2;
+        private static final String[] POSSIBLE_OPERATORS = {"!=", "==", "<", ">", "<=", ">="};
         private static final Random RNG = new Random();
 
         // EA state
