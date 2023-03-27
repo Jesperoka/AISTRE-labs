@@ -8,11 +8,11 @@ import org.apache.commons.lang3.ArrayUtils;
 public class PatchingLab {
 
         // Hyperparameters
-        private static final int      POPULATION_SIZE = 10; // must be an even number
+        private static final int      POPULATION_SIZE = 100; // must be an even number
         private static final double   SURVIVOR_FRACTION = 0.5; // what fraction of population survives selection process
         private static final float    MUTATION_RATE = 0.2f;
-        private static final int      NUM_TOP_TARANTULA_SCORES = 6; 
-        private static final int      NUM_MUTATIONS = 2;
+        private static final int      NUM_TOP_TARANTULA_SCORES = 4; 
+        private static final int      NUM_MUTATIONS = 1;
         // Constants
         private static final String[] POSSIBLE_OPERATORS = {"!=", "==", "<", ">", "<=", ">="};
         private static final Random   RNG = new Random();
@@ -127,7 +127,6 @@ public class PatchingLab {
         private static int computeRandomDuelLoser(List<Individual> population) {
                 int firstIdx = RNG.nextInt(population.size());
                 int secondIdx = RNG.nextInt(population.size());
-                System.out.println("DEBUG: duel: " + firstIdx + " vs " + secondIdx);
                 Individual first = population.get(firstIdx);
                 Individual second = population.get(secondIdx);
                 int loserIdx =  first.fitnessScore  > second.fitnessScore ? secondIdx :
@@ -180,10 +179,6 @@ public class PatchingLab {
 
         private static void selection() {
                 assert(population.size() % 2 == 0) : "Uneven population size, please specify an even number of individuals.";
-
-                // Run tests on all individuals in the population
-                System.out.println("DEBUG: population.size()" + population.size());
-                // runAllTests(population);
 
                 // Iterate over population
                 while (population.size() > SURVIVOR_FRACTION * POPULATION_SIZE) {
@@ -242,8 +237,6 @@ public class PatchingLab {
                 for(int j = 0; j < n.operators.length; j++) {
                         n.operators[j] = j > crossoverPoint ? A.operators[j] : B.operators[j];
                 }
-                // n.testResults = runTests(n.operators);
-                // n.tarantulaScores = computeTarantulaScores(n.testResults, OperatorTracker.operators.length, currentTestSpectrum);
                 return n;
         }
 
@@ -256,7 +249,6 @@ public class PatchingLab {
                 //  - Check if you need to ignore the newly added individuals.
                 //  - Check if the size of the population should stay equal.
                 while (population.size() < POPULATION_SIZE) {
-                        System.out.println("DEBUG: crossover() population.size()" + population.size());
                         population.add(singlePointCrossover(population.get(RNG.nextInt(population.size())), population.get(RNG.nextInt(population.size()))));
                 }
         }
@@ -266,11 +258,6 @@ public class PatchingLab {
          */
         static void run() {
                 boolean isFinished = false;
-
-                int trueCount = 0;
-                List<Boolean> initialTestResults = OperatorTracker.runAllTests();
-                for (boolean bool : initialTestResults) {if (bool) {trueCount++;}}
-                System.out.println("DEBUG: trueCount / numTests: " + trueCount + " / " + initialTestResults.size());
 
                 // Initial population
                 initialize();
@@ -299,7 +286,6 @@ public class PatchingLab {
                 int bestIdx = -1;
 
                 for(int i = 0; i < population.size(); i++) {
-                        System.out.println("DEBUG: population.get(i).fitnessScore: " + population.get(i).fitnessScore);
                         if(population.get(i).fitnessScore > best) {
                                 best = population.get(i).fitnessScore;
                                 bestIdx = i;
