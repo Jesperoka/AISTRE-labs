@@ -5,20 +5,23 @@ import com.google.common.reflect.TypeToken;
 
 public class PatchingLab {
 
+        // Hyperparameters
+        private static final int      POPULATION_SIZE = 10; // must be an even number
+        private static final double   SURVIVOR_FRACTION = 0.5; // what fraction of population survives selection process
+        private static final int      NUM_TOP_TARANTULA_SCORES = 3; 
+        private static final int      NUM_MUTATIONS = 2;
         // Constants
-        private static final int POPULATION_SIZE = 10; // must be an even number
         private static final String[] POSSIBLE_OPERATORS = {"!=", "==", "<", ">", "<=", ">="};
-        private static final int NUM_TOP_TARANTULA_SCORES = 3; 
-        private static final int NUM_MUTATIONS = 2;
-        private static final Random RNG = new Random();
+        private static final Random   RNG = new Random();
 
         // EA state
         private static class Individual {
-                String[] operators = new String[OperatorTracker.operators.length];
-                List<Boolean> testResults = new ArrayList<>();
-                double fitnessScore = 0.0;
-                double[] tarantulaScore;
+                String[]      operators    = new String[OperatorTracker.operators.length];
+                List<Boolean> testResults  = new ArrayList<>();
+                double        fitnessScore = 0.0;
+                double[]      tarantulaScores;
         }
+
         private static enum typeEnum {
                 INT,
                 BOOL,
@@ -27,13 +30,6 @@ public class PatchingLab {
         private static typeEnum[] operatorTypes = new typeEnum[OperatorTracker.operators.length];
         private static List<Individual> population;
         private static Map<Integer, List<Integer>> currentTestSpectrum = new HashMap<>(); // scary global variable updated by functions based on async behavior
-
-        // Wrapper for functional management of operator string array and test spectrum during test runs
-        private static List<Boolean> runTests(String[] operators) {
-                currentTestSpectrum.clear();
-                OperatorTracker.operators = operators;
-                return OperatorTracker.runAllTests();
-        }
 
         // Add current test to list of tests that cover the operator associated to operator_nr
         private static void mapCurrentTestToOperator(int operator_nr) {
@@ -96,9 +92,20 @@ public class PatchingLab {
                         int[] results = countLineResults(testResults, testSpectrum.get(operatorNumber));
                         if (results[PASS] == 0 && results[FAIL] == 0) {scores[operatorNumber] = -1;}
                         // Ensure its not using integer division.
-                        scores[operatorNumber] = (double)results[FAIL] / ((double) results[PASS] + results[FAIL]);
+                        scores[operatorNumber] = (double) results[FAIL] / ((double) results[PASS] + results[FAIL]);
                 }
                 return scores;
+        }
+
+        private static int computeRandomDuelLoser(List<Individual> population) {
+                int firstIdx = RNG.nextInt(population.size());
+                int secondIdx = RNG.nextInt(population.size());
+                Individual first = population.get(firstIdx);
+                Individual second = population.get(secondIdx);
+                int loserIdx =  first.fitnessScore  > second.fitnessScore ? secondIdx :
+                                second.fitnessScore > first.fitnessScore  ? firstIdx :
+                                new int[] {firstIdx, secondIdx}[RNG.nextInt(2)];
+                return loserIdx;
         }
 
         private static int indexOf(double value, double[] array) {
@@ -113,23 +120,30 @@ public class PatchingLab {
         private static void initialize(){
                 // initialize the population based on most suspicious OperatorTracker.operators
                 java.util.Arrays.fill(operatorTypes, typeEnum.UNDEFINED);
-                List<Boolean> testResults = runTests(OperatorTracker.operators);
-                double[] tarantulaScores = computeTarantulaScores(testResults, OperatorTracker.operators.length, currentTestSpectrum);
-                int[] mutationIndices = selectMutationIndices(tarantulaScores);
+
+                Individual ancestor = new Individual() {{operators = OperatorTracker.operators;}};
+                ancestor.testResults = runTests(ancestor.operators);
+                ancestor.tarantulaScores = computeTarantulaScores(ancestor.testResults, OperatorTracker.operators.length, currentTestSpectrum);
 
                 for (int i = 0; i < POPULATION_SIZE; i++) {
-                        String[] initialOperators = mutate(mutationIndices, OperatorTracker.operators);
-                        population.add(new Individual() {{operators = initialOperators;}});      
+                        population.add(new Individual() {{operators = mutated(tarantulaIndices(tarantulaScores), ancestor.operators);}});      
                 }
         }
 
         /// RUN TESTS ///
 
-        private static void runAllTests() {
+        // Wrapper for (impure) functional management of operator string array and test spectrum during test runs
+        private static List<Boolean> runTests(String[] operators) {
+                currentTestSpectrum.clear();
+                OperatorTracker.operators = operators;
+                return OperatorTracker.runAllTests();
+        }
+
+        private static void runAllTests(List<Individual> population) {
                 for (Individual A : population) {
                         A.testResults = runTests(A.operators);
                         A.fitnessScore = computeFitnessScore(A.testResults);
-                        A.tarantulaScore = computeTarantulaScores(A.testResults, OperatorTracker.operators.length, currentTestSpectrum);
+                        A.tarantulaScores = computeTarantulaScores(A.testResults, OperatorTracker.operators.length, currentTestSpectrum);
                 }
         }
 
@@ -137,43 +151,30 @@ public class PatchingLab {
 
         private static void selection() {
                 assert(population.size() % 2 == 0) : "Uneven population size, please specify an even number of individuals.";
-                List<Individual> winners = new ArrayList<>();
-                
+
+                // Run tests on all individuals in the population
+                runAllTests(population);
+
                 // Iterate over population
-                while (!population.isEmpty()) {
-                        // Randomly remove two dueling individuals from the population
-                        Individual first = population.remove(RNG.nextInt(population.size()));
-                        Individual second = population.remove(RNG.nextInt(population.size()));
-
-                        // get the fitness scores.
-                        double firstScore = first.fitnessScore;
-                        double secondScore = second.fitnessScore;
-
-                        // Add highest score, otherwise flip a coin
-                        winners.add(firstScore > secondScore ? first :
-                                    secondScore > firstScore ? second :
-                                    new Individual[] {first, second}[RNG.nextInt(2)]);
+                while (population.size() > SURVIVOR_FRACTION * POPULATION_SIZE) {
+                        population.remove(computeRandomDuelLoser(population));
                 }
-                
-                // Re add the winner to the population
-                population.addAll(winners);
         }
 
         /// MUTATION ///
 
         /**
-         * This methods uses the calculated tarantula scores for a given individual and based on that selects operators that
-         * can be mutated.
-         * @param tarantulaScores The calculated tarantula scores.
-         * @return A list of suspicious operators.
+         * Randomly selects NUM_MUTATIONS out of NUM_TOP_TARANTULA_SCORES scores and returns their indices in the tarantulaScores array.
+         * @param tarantulaScores an array of scores to select indices from
+         * @return an array of indices representing a NUM_MUTATIONS sized random subset of the top NUM_TOP_TARANTULA_SCORES scores
          */
-        private static int[] selectMutationIndices(double[] tarantulaScores) {
-                int[] mutationIndices = new int[NUM_MUTATIONS];
+        private static int[] tarantulaIndices(double[] tarantulaScores) {
+                int[] tarantulaIndices = new int[NUM_MUTATIONS];
                 double[] sortedtarantulaScores = Arrays.copyOf(tarantulaScores, tarantulaScores.length);
                 Arrays.sort(sortedtarantulaScores);
                 // reverting back to manually swapping, no need to shorten the array here.
                 for(int i = NUM_TOP_TARANTULA_SCORES-1; i >= 1; i--) {
-                        int indxB = RNG.nextInt(0, NUM_TOP_TARANTULA_SCORES+1);
+                        int indxB = RNG.nextInt(NUM_TOP_TARANTULA_SCORES+1);
                         double A = sortedtarantulaScores[i];
                         sortedtarantulaScores[i] = sortedtarantulaScores[indxB];
                         sortedtarantulaScores[indxB] = A;
@@ -181,36 +182,33 @@ public class PatchingLab {
                 // For testing
                 System.out.println("DEBUG mutation: " + Arrays.toString(sortedtarantulaScores));
 
-                for (int i = 0; i < mutationIndices.length; i++) {
-                        mutationIndices[i] = indexOf(sortedtarantulaScores[i], tarantulaScores);
+                for (int i = 0; i < tarantulaIndices.length; i++) {
+                        tarantulaIndices[i] = indexOf(sortedtarantulaScores[i], tarantulaScores);
                 }
-                return mutationIndices;
+                return tarantulaIndices;
         }
 
         /**
-         * This method mutates a specific individual.
-         * @param mutationIndices pointers to the operators to be mutated.
-         * @param A The individual to be mutated.
+         * Randomly changes elements of input array to new values based on a global array of possible values.
+         * @param mutationIndices indices of un-mutated array to randomly change
+         * @param operators un-mutated operator array
+         * @return mutated operator array
          */
-        private static void mutate(Individual A, int[] mutationIndices) {
+        private static String[] mutated(int[] mutationIndices, String[] operators) {
                 int length = 0;
                 for (int idx : mutationIndices) {
                         if (operatorTypes[idx] == typeEnum.INT) {length = POSSIBLE_OPERATORS.length;}
-                        else if (operatorTypes[idx] == typeEnum.BOOL) {length = 2;}
+                        else if (operatorTypes[idx] == typeEnum.BOOL) {length = 2;} 
                         else { throw new IllegalArgumentException("Cannot mutate UNDEFINED operator type"); }
-                        A.operators[idx] = POSSIBLE_OPERATORS[RNG.nextInt(length)];
+                        operators[idx] = POSSIBLE_OPERATORS[RNG.nextInt(length)];
                 }
+                return operators;
         }
 
-        /**
-         * This method loops through and calls the mutate function on every individual in the population.
-         */
+        // Mutate population based on tarantula fault localization
         private static void mutation() {
-                // Find bad lines with tarantula, same as in first part of initialize, which means we can make it a function.
-                for (int i = 0; i < POPULATION_SIZE; i++) {
-                        Individual A = population.get(i);
-                        int[] indices = selectMutationIndices(A.tarantulaScore);
-                        mutate(A, indices);
+                for (Individual A : population) {
+                        A.operators = mutated(tarantulaIndices(A.tarantulaScores), A.operators);
                 }
         }
 
@@ -248,51 +246,31 @@ public class PatchingLab {
                 //  - Ensure it cannot take the same one twice.
                 //  - Check if you need to ignore the newly added individuals.
                 //  - Check if the size of the population should stay equal.
-
-                population.add(singlePointCrossover(population.get(RNG.nextInt(population.size())), population.get(RNG.nextInt(population.size()))));
+                while (population.size() < POPULATION_SIZE) {
+                        population.add(singlePointCrossover(population.get(RNG.nextInt(population.size())), population.get(RNG.nextInt(population.size()))));
+                }
         }
 
         /**
          * This is the main loop of the genetic algorith. Every iteration it calls the selection, mutation and crossover methods.
          */
         static void run() {
-                initialize();
-
-                // Place the code here you want to run once:
-                // You want to change this of course, this is just an example
-                // Tests are loaded from resources/rers2020_test_cases. If you are you are using
-                // your own tests, make sure you put them in the same folder with the same
-                // naming convention.
-                OperatorTracker.runAllTests();
-                System.out.println("Entered run");
+                boolean isFinished = false;
 
                 // Initial population
+                initialize();
 
-                
-                // Loop here, running your genetic algorithm until you think it is done
-                boolean isFinished = false;
                 while (!isFinished) {
-
-                        runAllTests();
-
-                        // { Best fitness , average fitness }
-                        double[] testResults = bestResults();
-                        System.out.println("DEBUG values " + Arrays.toString(testResults));
-                        // if all tests pass then we found a fix.
-                        if(testResults[0] == 1) {
-                                isFinished = true;
-                        }
+                        isFinished = monitor();
 
                         // Selection
                         selection();
 
-                        // Mutation
-                        mutation();
-
                         // Crossover
                         crossover();
 
-
+                        // Mutation (keeping mutation after crossover for now)
+                        mutation();
                 }
 
         }
@@ -312,6 +290,16 @@ public class PatchingLab {
                 testResults[0] = best;
                 testResults[1] = average / population.size();
                 return testResults;
+        }
+
+        private static boolean monitor() {
+                double[] testResults = bestResults();
+                System.out.println("DEBUG values " + Arrays.toString(testResults));
+                // if all tests pass then we found a fix.
+                if(testResults[0] != 1) {
+                        return false;
+                }
+                return true;
         }
 
         public static void output(String out){
