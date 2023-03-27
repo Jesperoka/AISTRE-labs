@@ -112,9 +112,6 @@ public class PatchingLab {
                         if (results[PASS] == 0 && results[FAIL] == 0) {scores[operatorNumber] = -1;}
                         else {scores[operatorNumber] = (double) results[FAIL] / (double) (results[PASS] + results[FAIL]);}
                 }
-                System.out.println("DEBUG: testResults: "+ testResults);
-                System.out.println("DEBUG: numOperators: "+ numOperators);
-                System.out.print("DEBUG: scores: " + Arrays.toString(scores));
                 return scores;
         }
 
@@ -201,9 +198,7 @@ public class PatchingLab {
 
         // Mutate population based on tarantula fault localization
         private static void mutation() {
-                System.out.println("DEBUG: "+ population);
                 for (Individual A : population) {
-                        System.out.println("A.tarantulaScores:   " + A.tarantulaScores);
                         A.mutate(tarantulaIndices(A.tarantulaScores));
                 }
         }
@@ -231,6 +226,8 @@ public class PatchingLab {
                 for(int j = 0; j < n.operators.length; j++) {
                         n.operators[j] = j > crossoverPoint ? A.operators[j] : B.operators[j];
                 }
+                n.testResults = runTests(n.operators);
+                n.tarantulaScores = computeTarantulaScores(n.testResults, OperatorTracker.operators.length, currentTestSpectrum);
                 return n;
         }
 
@@ -262,13 +259,12 @@ public class PatchingLab {
                         // Selection
                         selection();
 
+                        // Mutation TODO: check with professors (keeping mutation before crossover for now)
+                        mutation();
+
                         // Crossover
                         crossover();
-
-                        // Mutation (keeping mutation after crossover for now)
-                        mutation();
                 }
-
         }
 
         /// HELPER METHODS ///
