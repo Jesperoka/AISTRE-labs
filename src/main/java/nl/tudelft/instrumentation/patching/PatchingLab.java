@@ -20,6 +20,21 @@ public class PatchingLab {
                 List<Boolean> testResults  = new ArrayList<>();
                 double        fitnessScore = 0.0;
                 double[]      tarantulaScores;
+
+                /**
+                 * Randomly changes elements of the inidividual's operators array
+                 * @param mutationIndices indices of un-mutated array to randomly change
+                */
+                void mutate(int[] mutationIndices) {
+                        int length = 0;
+                        for (int idx : mutationIndices) {
+                                if (operatorTypes[idx] == typeEnum.INT) {length = POSSIBLE_OPERATORS.length;}
+                                else if (operatorTypes[idx] == typeEnum.BOOL) {length = 2;} 
+                                else { throw new IllegalArgumentException("Cannot mutate UNDEFINED operator type"); }
+                                operators[idx] = POSSIBLE_OPERATORS[RNG.nextInt(length)];
+                        }
+                }
+
         }
 
         private static enum typeEnum {
@@ -34,8 +49,14 @@ public class PatchingLab {
         // Add current test to list of tests that cover the operator associated to operator_nr
         private static void mapCurrentTestToOperator(int operator_nr) {
                 // TEST THIS
-                if(currentTestSpectrum.putIfAbsent(operator_nr, Arrays.asList(new Integer[]{OperatorTracker.current_test})) == null) {return;}
-                else {currentTestSpectrum.get(operator_nr).add(OperatorTracker.current_test);}
+                System.out.println("DEBUG: mapCurrentTestToOperator()");
+                System.out.println("DEBUG: operator_nr: " + operator_nr);
+                if(currentTestSpectrum.putIfAbsent(operator_nr, Arrays.asList(new Integer[]{OperatorTracker.current_test})) == null) {
+                        System.out.println("DEBUG: if");
+                        return;}
+                else {
+                        System.out.println("DEBUG: else");
+                        currentTestSpectrum.get(operator_nr).add(OperatorTracker.current_test);}
         }
 
         // encounteredOperator gets called for each operator encountered while running tests
@@ -79,25 +100,18 @@ public class PatchingLab {
         private static int[] countLineResults(List<Boolean> testResults, List<Integer> coveringTests) {
                 int PASS = 0, FAIL = 1;
                 int[] lineResults = {0, 0};
-                if (coveringTests == null) {System.out.println("NULL STIL");} // no tests cover this 
-                if (coveringTests.isEmpty()) {System.out.println("EMPTY LIST, SHOULD BE FINE");}
-                try {
-                        for (int testIndex : coveringTests) {
-                                int dummyVar = testResults.get(testIndex) ? lineResults[PASS]++ : lineResults[FAIL]++;
-                        }
-                        return lineResults;
+                for (int testIndex : coveringTests) {
+                        int dummyVar = testResults.get(testIndex) ? lineResults[PASS]++ : lineResults[FAIL]++;
                 }
-                catch (NullPointerException e) {
-                        System.out.println(testResults);
-                        System.out.println(coveringTests);
-                        System.out.println(coveringTests.size());
-                        throw new RuntimeException();
-                }
+                return lineResults;
+
         }
 
         private static double[] computeTarantulaScores(List<Boolean> testResults, int numOperators, Map<Integer, List<Integer>> testSpectrum) {
                 int PASS = 0, FAIL = 1;
                 double[] scores = new double[numOperators];
+                if (testResults == null) {System.out.println("testResults is NULL");}
+                if (testSpectrum == null) {System.out.println("testResults is NULL");}
                 for (int operatorNumber = 0; operatorNumber < numOperators; operatorNumber++) {
                         int[] results = countLineResults(testResults, testSpectrum.getOrDefault(operatorNumber, new ArrayList<>()));
                         if (results[PASS] == 0 && results[FAIL] == 0) {scores[operatorNumber] = -1;}
@@ -135,7 +149,9 @@ public class PatchingLab {
                 ancestor.tarantulaScores = computeTarantulaScores(ancestor.testResults, OperatorTracker.operators.length, currentTestSpectrum);
 
                 for (int i = 0; i < POPULATION_SIZE; i++) {
-                        population.add(new Individual() {{operators = mutated(tarantulaIndices(tarantulaScores), ancestor.operators);}});      
+                        Individual offspring = new Individual();
+                        offspring.mutate(tarantulaIndices(ancestor.tarantulaScores));
+                        population.add(offspring);
                 }
         }
 
@@ -197,27 +213,10 @@ public class PatchingLab {
                 return tarantulaIndices;
         }
 
-        /**
-         * Randomly changes elements of input array to new values based on a global array of possible values.
-         * @param mutationIndices indices of un-mutated array to randomly change
-         * @param operators un-mutated operator array
-         * @return mutated operator array
-         */
-        private static String[] mutated(int[] mutationIndices, String[] operators) {
-                int length = 0;
-                for (int idx : mutationIndices) {
-                        if (operatorTypes[idx] == typeEnum.INT) {length = POSSIBLE_OPERATORS.length;}
-                        else if (operatorTypes[idx] == typeEnum.BOOL) {length = 2;} 
-                        else { throw new IllegalArgumentException("Cannot mutate UNDEFINED operator type"); }
-                        operators[idx] = POSSIBLE_OPERATORS[RNG.nextInt(length)];
-                }
-                return operators;
-        }
-
         // Mutate population based on tarantula fault localization
         private static void mutation() {
                 for (Individual A : population) {
-                        A.operators = mutated(tarantulaIndices(A.tarantulaScores), A.operators);
+                        A.mutate(tarantulaIndices(A.tarantulaScores));
                 }
         }
 
