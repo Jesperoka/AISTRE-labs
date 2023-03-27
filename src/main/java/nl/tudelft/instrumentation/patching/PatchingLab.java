@@ -8,8 +8,9 @@ import org.apache.commons.lang3.ArrayUtils;
 public class PatchingLab {
 
         // Hyperparameters
-        private static final int      POPULATION_SIZE = 100; // must be an even number
+        private static final int      POPULATION_SIZE = 10; // must be an even number
         private static final double   SURVIVOR_FRACTION = 0.5; // what fraction of population survives selection process
+        private static final float    MUTATION_RATE = 0.2f;
         private static final int      NUM_TOP_TARANTULA_SCORES = 3; 
         private static final int      NUM_MUTATIONS = 2;
         // Constants
@@ -92,6 +93,8 @@ public class PatchingLab {
                 }
                 // divide by the maximal total value to get a number <= 1;
                 return (positiveWeight*totalResults[PASS] - negativeWeight*totalResults[FAIL]) / (positiveWeight * testResults.size());
+                // return positiveWeight*totalResults[PASS] - negativeWeight*totalResults[FAIL];
+                
         }
 
         private static int[] countLineResults(List<Boolean> testResults, List<Integer> coveringTests) {
@@ -196,10 +199,15 @@ public class PatchingLab {
                 return mutationIndices;
         }
 
-        // Mutate population based on tarantula fault localization
+        // Mutate small percentage of population based on tarantula fault localization
         private static void mutation() {
                 for (Individual A : population) {
-                        A.mutate(tarantulaIndices(A.tarantulaScores));
+                        if (RNG.nextFloat() < MUTATION_RATE) {
+                                // Just in case the individual that gets mutated is a child from the cross over, we rerun tests.
+                                A.testResults = runTests(A.operators);
+                                A.tarantulaScores = computeTarantulaScores(A.testResults, OperatorTracker.operators.length, currentTestSpectrum);
+                                A.mutate(tarantulaIndices(A.tarantulaScores));
+                        }
                 }
         }
 
@@ -259,11 +267,11 @@ public class PatchingLab {
                         // Selection
                         selection();
 
-                        // Mutation TODO: check with professors (keeping mutation before crossover for now)
-                        mutation();
-
                         // Crossover
                         crossover();
+
+                        // Mutation 
+                        mutation();
                 }
         }
 
