@@ -49,17 +49,10 @@ public class PatchingLab {
         // Add current test to list of tests that cover the operator associated to operator_nr
         private static void mapCurrentTestToOperator(int operator_nr) {
                 // TEST THIS
-                System.out.println("DEBUG: mapCurrentTestToOperator()");
-                System.out.println("DEBUG: operator_nr: " + operator_nr);
-                System.out.println(currentTestSpectrum.keySet());
-                System.out.println(currentTestSpectrum.values());
-                System.out.println(OperatorTracker.current_test);
-                if(currentTestSpectrum.putIfAbsent(operator_nr, Arrays.asList(new Integer[]{OperatorTracker.current_test})) == null) {
-                        System.out.println("DEBUG: if");
-                        return;}
-                else {
-                        System.out.println("DEBUG: else");
-                        currentTestSpectrum.get(operator_nr).add(OperatorTracker.current_test);}
+                if(currentTestSpectrum.get(operator_nr) == null) {
+                        currentTestSpectrum.put(operator_nr, new ArrayList<Integer>());
+                }
+                currentTestSpectrum.get(operator_nr).add(OperatorTracker.current_test);
         }
 
         // encounteredOperator gets called for each operator encountered while running tests
@@ -113,13 +106,16 @@ public class PatchingLab {
         private static double[] computeTarantulaScores(List<Boolean> testResults, int numOperators, Map<Integer, List<Integer>> testSpectrum) {
                 int PASS = 0, FAIL = 1;
                 double[] scores = new double[numOperators];
-                if (testResults == null) {System.out.println("testResults is NULL");}
-                if (testSpectrum == null) {System.out.println("testResults is NULL");}
+                System.out.println("DEBUG: testResults: "+testResults);
+                System.out.println("DEBUG: testSpectrum: "+testSpectrum.keySet());
                 for (int operatorNumber = 0; operatorNumber < numOperators; operatorNumber++) {
                         int[] results = countLineResults(testResults, testSpectrum.getOrDefault(operatorNumber, new ArrayList<>()));
                         if (results[PASS] == 0 && results[FAIL] == 0) {scores[operatorNumber] = -1;}
-                        scores[operatorNumber] = (double) results[FAIL] / ((double) results[PASS] + results[FAIL]);
+                        else {scores[operatorNumber] = (double) results[FAIL] / (double) (results[PASS] + results[FAIL]);}
                 }
+                System.out.println("DEBUG: testResults: "+ testResults);
+                System.out.println("DEBUG: numOperators: "+ numOperators);
+                System.out.println("DEBUG: scores: " + scores);
                 return scores;
         }
 
@@ -149,8 +145,11 @@ public class PatchingLab {
                 System.out.println("HERE2");
                 Individual ancestor = new Individual() {{operators = OperatorTracker.operators;}};
                 System.out.println("HERE3");
+                System.out.println(currentTestSpectrum.keySet());
                 ancestor.testResults = runTests(ancestor.operators);
+                
                 System.out.println("HERE4");
+                System.out.println(currentTestSpectrum.keySet());
                 ancestor.tarantulaScores = computeTarantulaScores(ancestor.testResults, OperatorTracker.operators.length, currentTestSpectrum);
                 System.out.println("HERE5");
                 for (int i = 0; i < POPULATION_SIZE; i++) {
@@ -205,30 +204,48 @@ public class PatchingLab {
          * @param tarantulaScores an array of scores to select indices from
          * @return an array of indices representing a NUM_MUTATIONS sized random subset of the top NUM_TOP_TARANTULA_SCORES scores
          */
-        private static int[] tarantulaIndices(double[] tarantulaScores) {
-                int[] tarantulaIndices = new int[NUM_MUTATIONS];
-                double[] sortedtarantulaScores = Arrays.copyOf(tarantulaScores, tarantulaScores.length);
-                Arrays.sort(sortedtarantulaScores);
-                // reverting back to manually swapping, no need to shorten the array here.
-                for(int i = NUM_TOP_TARANTULA_SCORES-1; i >= 1; i--) {
-                        int indxB = RNG.nextInt(NUM_TOP_TARANTULA_SCORES+1);
-                        double A = sortedtarantulaScores[i];
-                        sortedtarantulaScores[i] = sortedtarantulaScores[indxB];
-                        sortedtarantulaScores[indxB] = A;
-                }
-                // For testing
-                System.out.println("DEBUG mutation: " + Arrays.toString(sortedtarantulaScores));
+        // private static int[] tarantulaIndices(double[] tarantulaScores) {
+        //         int[] tarantulaIndices = new int[NUM_MUTATIONS];
+        //         double[] sortedtarantulaScores = Arrays.copyOf(tarantulaScores, tarantulaScores.length);
+        //         Arrays.sort(sortedtarantulaScores);
+        //         // reverting back to manually swapping, no need to shorten the array here.
+        //         for(int i = NUM_TOP_TARANTULA_SCORES-1; i >= 1; i--) {
+        //                 int indxB = RNG.nextInt(NUM_TOP_TARANTULA_SCORES+1);
+        //                 double A = sortedtarantulaScores[i];
+        //                 sortedtarantulaScores[i] = sortedtarantulaScores[indxB];
+        //                 sortedtarantulaScores[indxB] = A;
+        //         }
+        //         // For testing
+        //         System.out.println("DEBUG mutation: " + Arrays.toString(sortedtarantulaScores));
 
-                for (int i = 0; i < tarantulaIndices.length; i++) {
-                        tarantulaIndices[i] = indexOf(sortedtarantulaScores[i], tarantulaScores);
+        //         for (int i = 0; i < tarantulaIndices.length; i++) {
+        //                 tarantulaIndices[i] = indexOf(sortedtarantulaScores[i], tarantulaScores);
+        //         }
+        //         System.out.println("HERE1");
+        //         return tarantulaIndices;
+        // }
+        
+        private static int[] tarantulaIndices(double[] tarantulaScores) {
+                if (tarantulaScores == null) {System.out.println("tarantulaScores is NULL");}
+                int[] mutationIndices = new int[NUM_MUTATIONS];
+                double[] sortedtarantulaScores = Arrays.copyOf(tarantulaScores, tarantulaScores.length);
+                System.out.println("DEBUG: unsorted: " + sortedtarantulaScores.toString());
+                Arrays.sort(sortedtarantulaScores);
+                System.out.println("DEBUG: sorted: " + sortedtarantulaScores.toString());
+                sortedtarantulaScores = Arrays.copyOfRange(sortedtarantulaScores, 0, NUM_TOP_TARANTULA_SCORES);
+                Collections.shuffle(Arrays.asList(sortedtarantulaScores));
+                System.out.println("DEBUG: HERE7");     
+                for (int i = 0; i < mutationIndices.length; i++) {
+                        mutationIndices[i] = indexOf(sortedtarantulaScores[sortedtarantulaScores.length - i - 1], tarantulaScores);
                 }
-                System.out.println("HERE1");
-                return tarantulaIndices;
+                System.out.println("DEBUG: "+mutationIndices.toString());
+                return mutationIndices;
         }
 
         // Mutate population based on tarantula fault localization
         private static void mutation() {
                 for (Individual A : population) {
+                        System.out.println("A.tarantulaScores:   " + A.tarantulaScores);
                         A.mutate(tarantulaIndices(A.tarantulaScores));
                 }
         }
