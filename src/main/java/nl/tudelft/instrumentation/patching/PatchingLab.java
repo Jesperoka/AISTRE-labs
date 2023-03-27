@@ -43,7 +43,7 @@ public class PatchingLab {
                 UNDEFINED
         }
         private static typeEnum[] operatorTypes = new typeEnum[OperatorTracker.operators.length];
-        private static List<Individual> population;
+        private static List<Individual> population = new ArrayList<>();
         private static Map<Integer, List<Integer>> currentTestSpectrum = new HashMap<>(); // scary global variable updated by functions based on async behavior
 
         // Add current test to list of tests that cover the operator associated to operator_nr
@@ -51,6 +51,9 @@ public class PatchingLab {
                 // TEST THIS
                 System.out.println("DEBUG: mapCurrentTestToOperator()");
                 System.out.println("DEBUG: operator_nr: " + operator_nr);
+                System.out.println(currentTestSpectrum.keySet());
+                System.out.println(currentTestSpectrum.values());
+                System.out.println(OperatorTracker.current_test);
                 if(currentTestSpectrum.putIfAbsent(operator_nr, Arrays.asList(new Integer[]{OperatorTracker.current_test})) == null) {
                         System.out.println("DEBUG: if");
                         return;}
@@ -143,16 +146,25 @@ public class PatchingLab {
         private static void initialize(){
                 // initialize the population based on most suspicious OperatorTracker.operators
                 java.util.Arrays.fill(operatorTypes, typeEnum.UNDEFINED);
-
+                System.out.println("HERE2");
                 Individual ancestor = new Individual() {{operators = OperatorTracker.operators;}};
+                System.out.println("HERE3");
                 ancestor.testResults = runTests(ancestor.operators);
+                System.out.println("HERE4");
                 ancestor.tarantulaScores = computeTarantulaScores(ancestor.testResults, OperatorTracker.operators.length, currentTestSpectrum);
-
+                System.out.println("HERE5");
                 for (int i = 0; i < POPULATION_SIZE; i++) {
-                        Individual offspring = new Individual();
+                        System.out.println("HERE5.1");
+                        Individual offspring = new Individual() {{operators = ancestor.operators;}};
+                        System.out.println("HERE5.2");
                         offspring.mutate(tarantulaIndices(ancestor.tarantulaScores));
+                        System.out.println("HERE5.3");
+                        if (population == null) {System.out.println("polulation == null");}
+                        if (offspring == null) {System.out.println("offspring == null");}
                         population.add(offspring);
+                        System.out.println("HERE5.4");
                 }
+                System.out.println("HERE6");
         }
 
         /// RUN TESTS ///
@@ -210,6 +222,7 @@ public class PatchingLab {
                 for (int i = 0; i < tarantulaIndices.length; i++) {
                         tarantulaIndices[i] = indexOf(sortedtarantulaScores[i], tarantulaScores);
                 }
+                System.out.println("HERE1");
                 return tarantulaIndices;
         }
 
