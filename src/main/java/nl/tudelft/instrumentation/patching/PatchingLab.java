@@ -3,23 +3,26 @@ import java.util.*;
 
 import com.google.common.reflect.TypeToken;
 
+// student imports
 import org.apache.commons.lang3.ArrayUtils;
 
 public class PatchingLab {
 
         // Hyperparameters
-        private static final int      POPULATION_SIZE = 100; // must be an even number
+        private static final int      POPULATION_SIZE = 50; // must be an even number
         private static final double   SURVIVOR_FRACTION = 0.5; // what fraction of population survives selection process
-        private static final float    MUTATION_RATE = 0.1f;
-        private static final int      NUM_TOP_TARANTULA_SCORES = 20; 
-        private static final int      NUM_MUTATIONS = 10;
+        private static final float    MUTATION_RATE = 0.2f;
+        private static final int      INITIAL_NUM_TOP_TARANTULA_SCORES = 2; 
+        private static final int      INITIAL_NUM_MUTATIONS = 2;
+        private static final int      INITAL_PATIENCE = 25;
         // Constants
         private static final String[] POSSIBLE_OPERATORS = {"!=", "==", "<", ">", "<=", ">="};
         private static final Random   RNG = new Random();
+        private static final int      NUM_OPERATORS = OperatorTracker.operators.length;
 
         // EA state
         private static class Individual {
-                String[]      operators    = new String[OperatorTracker.operators.length];
+                String[]      operators    = new String[NUM_OPERATORS];
                 List<Boolean> testResults  = new ArrayList<>();
                 double        fitnessScore = 0.0;
                 double[]      tarantulaScores;
@@ -46,9 +49,35 @@ public class PatchingLab {
                 BOOL,
                 UNDEFINED
         }
-        private static typeEnum[] operatorTypes = new typeEnum[OperatorTracker.operators.length];
+        private static typeEnum[] operatorTypes = new typeEnum[NUM_OPERATORS];
         private static List<Individual> population = new ArrayList<>();
         private static Map<Integer, List<Integer>> currentTestSpectrum = new HashMap<>(); // scary global variable updated by functions based on async behavior
+        
+        private static class MutationScheduler {
+                static int numTarantulaScores = INITIAL_NUM_TOP_TARANTULA_SCORES;
+                static int numMutations = INITIAL_NUM_MUTATIONS;
+                static int patience = INITAL_PATIENCE;
+                static void safelyIncrementTarantula() { numTarantulaScores = numTarantulaScores < NUM_OPERATORS ? numTarantulaScores + 1 : numTarantulaScores; }
+                static void safelyDecrementTarantula() { numTarantulaScores = numTarantulaScores > 1 ? numTarantulaScores - 1 : numTarantulaScores; }
+                // static void safelyIncrementMutations() { numMutations = numMutations < NUM_OPERATORS ? numMutations + 1 : numMutations; }
+                // static void safelyDecrementMutations() { numMutations = numMutations > 1 ? numMutations - 1 : numMutations; }
+                static int patienceFunction() { return (int) Math.ceil(Math.exp(-0.5*iteration) + (INITAL_PATIENCE-2)*Math.exp(-0.05*iteration) + 0.05*iteration + 1); }
+                static int numStuck = 0;
+                static int numWorse = 0;
+                static int iteration = 0;
+                static double previousResult = Double.NEGATIVE_INFINITY;
+                static void update(double iterationResults) {
+                        if (previousResult == iterationResults) {numStuck++;} else {numStuck = 0; numTarantulaScores = INITIAL_NUM_TOP_TARANTULA_SCORES;}
+                        if (previousResult < iterationResults) {numWorse++;} else {numWorse = 0;}
+                        patience = patienceFunction();
+                        if (numStuck > patience) { safelyIncrementTarantula(); }; // IDEA: have numTarantulaScores follow NUM_OPERATORS*sin(0.1x) or something instead.
+                        if (numWorse > patience) { safelyDecrementTarantula(); };
+                        // if (numStuck > 3*patience) { safelyIncrementMutations(); };
+                        // if (numWorse > 3*patience) { safelyDecrementMutations(); };
+                        previousResult = iterationResults; // copy?
+                        iteration++;
+                }
+        }
 
         // Add current test to list of tests that cover the operator associated to operator_nr
         private static void mapCurrentTestToOperator(int operator_nr) {
@@ -151,7 +180,7 @@ public class PatchingLab {
 
                 Individual ancestor = new Individual() {{operators = OperatorTracker.operators;}};
                 ancestor.testResults = runTests(ancestor.operators);
-                ancestor.tarantulaScores = computeTarantulaScores(ancestor.testResults, OperatorTracker.operators.length, currentTestSpectrum);
+                ancestor.tarantulaScores = computeTarantulaScores(ancestor.testResults, NUM_OPERATORS, currentTestSpectrum);
 
                 for (int i = 0; i < POPULATION_SIZE; i++) {
                         Individual offspring = new Individual() {{operators = ancestor.operators;}};
@@ -173,7 +202,7 @@ public class PatchingLab {
                 for (Individual A : population) {
                         A.testResults = runTests(A.operators);
                         A.fitnessScore = computeFitnessScore(A.testResults);
-                        A.tarantulaScores = computeTarantulaScores(A.testResults, OperatorTracker.operators.length, currentTestSpectrum);
+                        A.tarantulaScores = computeTarantulaScores(A.testResults, NUM_OPERATORS, currentTestSpectrum);
                         A.newChild = false;
                 }
         }
@@ -192,14 +221,15 @@ public class PatchingLab {
         /// MUTATION ///
         
         private static int[] tarantulaIndices(double[] tarantulaScores) {
-                int[] mutationIndices = new int[NUM_MUTATIONS];
+                int[] mutationIndices = new int[MutationScheduler.numMutations];
                 double[] sortedtarantulaScores = Arrays.copyOf(tarantulaScores, tarantulaScores.length);
                 Arrays.sort(sortedtarantulaScores);
-                sortedtarantulaScores = Arrays.copyOfRange(sortedtarantulaScores, sortedtarantulaScores.length-NUM_TOP_TARANTULA_SCORES, sortedtarantulaScores.length);
-                // ArrayUtils.reverse(sortedtarantulaScores);
-                ArrayUtils.shuffle(sortedtarantulaScores);
+                int scoreIdx = Math.min((int)Math.floor(Math.abs(0.25*RNG.nextGaussian()*MutationScheduler.numTarantulaScores)), MutationScheduler.numTarantulaScores);
+                sortedtarantulaScores = Arrays.copyOfRange(sortedtarantulaScores, sortedtarantulaScores.length-MutationScheduler.numTarantulaScores, sortedtarantulaScores.length);
+                // ArrayUtils.shuffle(sortedtarantulaScores);
                 for (int i = 0; i < mutationIndices.length; i++) {
-                        mutationIndices[i] = indexOf(sortedtarantulaScores[sortedtarantulaScores.length - i - 1], tarantulaScores);
+                        mutationIndices[i] = indexOf(sortedtarantulaScores[sortedtarantulaScores.length - scoreIdx - 1], tarantulaScores);
+                        // mutationIndices[i] = indexOf(sortedtarantulaScores[sortedtarantulaScores.length - i - 1], tarantulaScores);
                 }
                 return mutationIndices;
         }
@@ -210,7 +240,7 @@ public class PatchingLab {
                         if (RNG.nextFloat() < MUTATION_RATE) {
                                 if (A.newChild) { // newly born children don't have initialized tarantulaScores
                                         A.testResults = runTests(A.operators);
-                                        A.tarantulaScores = computeTarantulaScores(A.testResults, OperatorTracker.operators.length, currentTestSpectrum);
+                                        A.tarantulaScores = computeTarantulaScores(A.testResults, NUM_OPERATORS, currentTestSpectrum);
                                 }
                                 A.mutate(tarantulaIndices(A.tarantulaScores));
                         }
@@ -308,13 +338,21 @@ public class PatchingLab {
 
         private static boolean monitor() {
                 double[] testResults = bestResults();
-                // System.out.println("DEBUG: best individual's operators this iteration:\n"+ Arrays.toString(population.get((int) testResults[2]).operators));
                 System.out.println("DEBUG: values [bestIdx, bestFitness, bestPassFrac, avgFitness]: " + Arrays.toString(testResults));
-                // if all tests pass then we found a fix.
+
+                MutationScheduler.update(testResults[1]); // make sure to pass the correct value here
+                System.out.println("DEBUG: MutationScheduler.numTarantulaScores: " + MutationScheduler.numTarantulaScores);
+                System.out.println("DEBUG: MutationScheduler.numMutations: " + MutationScheduler.numMutations);
+                System.out.println("DEBUG: MutationScheduler.numStuck: " + MutationScheduler.numStuck);
+                System.out.println("DEBUG: MutationScheduler.numWorse: " + MutationScheduler.numWorse);
+                System.out.println("DEBUG: MutationScheduler.patience: " + MutationScheduler.patience);
+
                 if(testResults[2] != 1.0) {
                         return false;
                 }
-                System.out.println("\nAlgorithm finished.\n");
+ 
+                System.out.println("\nAlgorithm finished (with perfect tests).\n");
+
                 return true;
         }
         
@@ -329,31 +367,3 @@ public class PatchingLab {
                 System.out.println(Thread.currentThread().getStackTrace()[2].getMethodName());;
         }
 }
-
-/// GRAVEYARD ///
-
-/**
-         * Randomly selects NUM_MUTATIONS out of NUM_TOP_TARANTULA_SCORES scores and returns their indices in the tarantulaScores array.
-         * @param tarantulaScores an array of scores to select indices from
-         * @return an array of indices representing a NUM_MUTATIONS sized random subset of the top NUM_TOP_TARANTULA_SCORES scores
-         */
-        // private static int[] tarantulaIndices(double[] tarantulaScores) {
-        //         int[] tarantulaIndices = new int[NUM_MUTATIONS];
-        //         double[] sortedtarantulaScores = Arrays.copyOf(tarantulaScores, tarantulaScores.length);
-        //         Arrays.sort(sortedtarantulaScores);
-        //         // reverting back to manually swapping, no need to shorten the array here.
-        //         for(int i = NUM_TOP_TARANTULA_SCORES-1; i >= 1; i--) {
-        //                 int indxB = RNG.nextInt(NUM_TOP_TARANTULA_SCORES+1);
-        //                 double A = sortedtarantulaScores[i];
-        //                 sortedtarantulaScores[i] = sortedtarantulaScores[indxB];
-        //                 sortedtarantulaScores[indxB] = A;
-        //         }
-        //         // For testing
-        //         System.out.println("DEBUG mutation: " + Arrays.toString(sortedtarantulaScores));
-
-        //         for (int i = 0; i < tarantulaIndices.length; i++) {
-        //                 tarantulaIndices[i] = indexOf(sortedtarantulaScores[i], tarantulaScores);
-        //         }
-        //         System.out.println("HERE1");
-        //         return tarantulaIndices;
-        // }
