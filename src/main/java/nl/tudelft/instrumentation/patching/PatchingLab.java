@@ -152,12 +152,12 @@ public class PatchingLab {
                         Individual second = population.remove(RNG.nextInt(population.size()));
 
                         // Run tests and compute fitness scores
-                        double firstScore = computeFitnessScore(runTests(first.operators));
-                        double secondScore = computeFitnessScore(runTests(second.operators));
+                        first.fitnessScore = computeFitnessScore(runTests(first.operators));
+                        second.fitnessScore = computeFitnessScore(runTests(second.operators));
 
                         // Add highest score, otherwise flip a coin
-                        winners.add(firstScore > secondScore ? first :
-                                    secondScore > firstScore ? second :
+                        winners.add(first.fitnessScore  > second.fitnessScore ? first :
+                                    second.fitnessScore > first.fitnessScore  ? second :
                                     new Individual[] {first, second}[RNG.nextInt(2)]);
                 }
                 
