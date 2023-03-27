@@ -79,19 +79,28 @@ public class PatchingLab {
         private static int[] countLineResults(List<Boolean> testResults, List<Integer> coveringTests) {
                 int PASS = 0, FAIL = 1;
                 int[] lineResults = {0, 0};
-                for (int testIndex : coveringTests) {
-                        int dummyVar = testResults.get(testIndex) ? lineResults[PASS]++ : lineResults[FAIL]++;
+                if (coveringTests == null) {System.out.println("NULL STIL");} // no tests cover this 
+                if (coveringTests.isEmpty()) {System.out.println("EMPTY LIST, SHOULD BE FINE");}
+                try {
+                        for (int testIndex : coveringTests) {
+                                int dummyVar = testResults.get(testIndex) ? lineResults[PASS]++ : lineResults[FAIL]++;
+                        }
+                        return lineResults;
                 }
-                return lineResults;
+                catch (NullPointerException e) {
+                        System.out.println(testResults);
+                        System.out.println(coveringTests);
+                        System.out.println(coveringTests.size());
+                        throw new RuntimeException();
+                }
         }
 
         private static double[] computeTarantulaScores(List<Boolean> testResults, int numOperators, Map<Integer, List<Integer>> testSpectrum) {
                 int PASS = 0, FAIL = 1;
                 double[] scores = new double[numOperators];
                 for (int operatorNumber = 0; operatorNumber < numOperators; operatorNumber++) {
-                        int[] results = countLineResults(testResults, testSpectrum.get(operatorNumber));
+                        int[] results = countLineResults(testResults, testSpectrum.getOrDefault(operatorNumber, new ArrayList<>()));
                         if (results[PASS] == 0 && results[FAIL] == 0) {scores[operatorNumber] = -1;}
-                        // Ensure its not using integer division.
                         scores[operatorNumber] = (double) results[FAIL] / ((double) results[PASS] + results[FAIL]);
                 }
                 return scores;
@@ -139,7 +148,7 @@ public class PatchingLab {
                 return OperatorTracker.runAllTests();
         }
 
-        private static void runAllTests(List<Individual> population) {
+        private static void runAllTests(List<Individual> population) { // TODO: rename to avoid confusion with OperatorTracker.runAllTests
                 for (Individual A : population) {
                         A.testResults = runTests(A.operators);
                         A.fitnessScore = computeFitnessScore(A.testResults);
