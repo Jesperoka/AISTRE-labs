@@ -8,7 +8,7 @@ import org.apache.commons.lang3.ArrayUtils;
 public class PatchingLab {
 
         // Hyperparameters
-        private static final int      POPULATION_SIZE = 10; // must be an even number
+        private static final int      POPULATION_SIZE = 100; // must be an even number
         private static final double   SURVIVOR_FRACTION = 0.5; // what fraction of population survives selection process
         private static final int      NUM_TOP_TARANTULA_SCORES = 3; 
         private static final int      NUM_MUTATIONS = 2;
@@ -226,8 +226,8 @@ public class PatchingLab {
                 for(int j = 0; j < n.operators.length; j++) {
                         n.operators[j] = j > crossoverPoint ? A.operators[j] : B.operators[j];
                 }
-                n.testResults = runTests(n.operators);
-                n.tarantulaScores = computeTarantulaScores(n.testResults, OperatorTracker.operators.length, currentTestSpectrum);
+                // n.testResults = runTests(n.operators);
+                // n.tarantulaScores = computeTarantulaScores(n.testResults, OperatorTracker.operators.length, currentTestSpectrum);
                 return n;
         }
 
@@ -270,35 +270,38 @@ public class PatchingLab {
         /// HELPER METHODS ///
 
         private static double[] bestResults() {
-                double[] testResults = new double[2];
+                double[] testResults = new double[3];
                 double best = -1;
                 double average = 0;
-                for(Individual A: population) {
-                        if(A.fitnessScore > best) {
-                                best = A.fitnessScore;
+                int bestIdx = -1;
+                for(int i = 0; i < population.size(); i++) {
+                        if(population.get(i).fitnessScore > best) {
+                                best = population.get(i).fitnessScore;
+                                bestIdx = i;
                         }
-                        average+=A.fitnessScore;
+                        average+=population.get(i).fitnessScore;
                 }
                 testResults[0] = best;
                 testResults[1] = average / population.size();
+                testResults[2] = (double) bestIdx; // yes its a double but whatever, just cast back and forth
                 return testResults;
         }
 
         private static boolean monitor() {
                 double[] testResults = bestResults();
-                System.out.println("DEBUG values " + Arrays.toString(testResults));
+                System.out.println("DEBUG: best individual's operators this iteration:\n"+ Arrays.toString(population.get((int) testResults[2]).operators));
+                System.out.println("DEBUG: values: " + Arrays.toString(testResults));
                 // if all tests pass then we found a fix.
                 if(testResults[0] != 1) {
                         return false;
                 }
                 return true;
         }
-
+        
         public static void output(String out){
-                // This will get called when the problem code tries to print things,
-                // the prints in the original code have been removed for your convenience
-
-                System.out.println(out);
+                // if(!out.contains("no transition")) {
+                //     System.out.println(out);
+                // }
         }
 }
 
