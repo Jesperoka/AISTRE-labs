@@ -10,9 +10,9 @@ public class PatchingLab {
         // Hyperparameters
         private static final int      POPULATION_SIZE = 100; // must be an even number
         private static final double   SURVIVOR_FRACTION = 0.5; // what fraction of population survives selection process
-        private static final float    MUTATION_RATE = 0.2f;
-        private static final int      NUM_TOP_TARANTULA_SCORES = 4; 
-        private static final int      NUM_MUTATIONS = 1;
+        private static final float    MUTATION_RATE = 0.1f;
+        private static final int      NUM_TOP_TARANTULA_SCORES = 20; 
+        private static final int      NUM_MUTATIONS = 10;
         // Constants
         private static final String[] POSSIBLE_OPERATORS = {"!=", "==", "<", ">", "<=", ">="};
         private static final Random   RNG = new Random();
@@ -23,6 +23,7 @@ public class PatchingLab {
                 List<Boolean> testResults  = new ArrayList<>();
                 double        fitnessScore = 0.0;
                 double[]      tarantulaScores;
+                boolean       newChild     = true; // marker to avoid running tests more times than necessary
 
                 /**
                  * Randomly changes elements of the inidividual's operators array
@@ -93,7 +94,8 @@ public class PatchingLab {
                 }
                 // divide by the maximal total value to get a number <= 1;
                 // return (positiveWeight*totalResults[PASS] - negativeWeight*totalResults[FAIL]) / (positiveWeight * testResults.size());
-                return positiveWeight*totalResults[PASS] - negativeWeight*totalResults[FAIL];
+                // return positiveWeight*totalResults[PASS] - negativeWeight*totalResults[FAIL];
+                return -negativeWeight*totalResults[FAIL];
         }
 
         private static int[] countTotalResults(List<Boolean> testResults) {
@@ -118,7 +120,7 @@ public class PatchingLab {
                 int[] totalResults = countTotalResults(testResults);
                 for (int operatorNumber = 0; operatorNumber < numOperators; operatorNumber++) {
                         int[] results = countLineResults(testResults, testSpectrum.getOrDefault(operatorNumber, new ArrayList<>()));
-                        if (results[PASS] == 0 && results[FAIL] == 0) {scores[operatorNumber] = 0;}
+                        if (results[PASS] == 0 && results[FAIL] == 0) {scores[operatorNumber] = 0;} // TODO: think, should this be like 0.1? because we want to eventually try these as well if we are stuck
                         else {scores[operatorNumber] = ((double) results[FAIL] / totalResults[FAIL] ) / ( ( (double) results[PASS] / totalResults[PASS]) + ( (double) results[FAIL] / totalResults[FAIL]) );}
                 }
                 return scores;
@@ -172,6 +174,7 @@ public class PatchingLab {
                         A.testResults = runTests(A.operators);
                         A.fitnessScore = computeFitnessScore(A.testResults);
                         A.tarantulaScores = computeTarantulaScores(A.testResults, OperatorTracker.operators.length, currentTestSpectrum);
+                        A.newChild = false;
                 }
         }
 
@@ -193,9 +196,8 @@ public class PatchingLab {
                 double[] sortedtarantulaScores = Arrays.copyOf(tarantulaScores, tarantulaScores.length);
                 Arrays.sort(sortedtarantulaScores);
                 sortedtarantulaScores = Arrays.copyOfRange(sortedtarantulaScores, sortedtarantulaScores.length-NUM_TOP_TARANTULA_SCORES, sortedtarantulaScores.length);
-                assert(sortedtarantulaScores.length == NUM_TOP_TARANTULA_SCORES);
                 // ArrayUtils.reverse(sortedtarantulaScores);
-                Collections.shuffle(Arrays.asList(sortedtarantulaScores));
+                ArrayUtils.shuffle(sortedtarantulaScores);
                 for (int i = 0; i < mutationIndices.length; i++) {
                         mutationIndices[i] = indexOf(sortedtarantulaScores[sortedtarantulaScores.length - i - 1], tarantulaScores);
                 }
@@ -206,9 +208,10 @@ public class PatchingLab {
         private static void mutation() {
                 for (Individual A : population) {
                         if (RNG.nextFloat() < MUTATION_RATE) {
-                                // Just in case the individual that gets mutated is a child from the cross over, we rerun tests.
-                                A.testResults = runTests(A.operators);
-                                A.tarantulaScores = computeTarantulaScores(A.testResults, OperatorTracker.operators.length, currentTestSpectrum);
+                                if (A.newChild) { // newly born children don't have initialized tarantulaScores
+                                        A.testResults = runTests(A.operators);
+                                        A.tarantulaScores = computeTarantulaScores(A.testResults, OperatorTracker.operators.length, currentTestSpectrum);
+                                }
                                 A.mutate(tarantulaIndices(A.tarantulaScores));
                         }
                 }
@@ -237,6 +240,7 @@ public class PatchingLab {
                 for(int j = 0; j < n.operators.length; j++) {
                         n.operators[j] = j > crossoverPoint ? A.operators[j] : B.operators[j];
                 }
+                n.newChild = true;
                 return n;
         }
 
@@ -280,32 +284,37 @@ public class PatchingLab {
         /// HELPER METHODS ///
 
         private static double[] bestResults() {
-                double[] testResults = new double[3];
+                double[] testResults = new double[4];
                 double best = Double.NEGATIVE_INFINITY;
                 double average = 0;
                 int bestIdx = -1;
+                double bestPassFrac = 0.0;
 
                 for(int i = 0; i < population.size(); i++) {
                         if(population.get(i).fitnessScore > best) {
                                 best = population.get(i).fitnessScore;
                                 bestIdx = i;
+                                int[] totalResults = countTotalResults(population.get(i).testResults);
+                                bestPassFrac = (double) totalResults[0] / (totalResults[0] + totalResults[1]);
                         }
                         average+=population.get(i).fitnessScore;
                 }
-                testResults[0] = best;
-                testResults[1] = average / population.size();
-                testResults[2] = (double) bestIdx; // yes its a double but whatever, just cast back and forth
+                testResults[0] = (double) bestIdx; // yes its a double but whatever, just cast back and forth
+                testResults[1] = best;
+                testResults[2] = bestPassFrac;
+                testResults[3] = average / population.size();
                 return testResults;
         }
 
         private static boolean monitor() {
                 double[] testResults = bestResults();
-                System.out.println("DEBUG: best individual's operators this iteration:\n"+ Arrays.toString(population.get((int) testResults[2]).operators));
-                System.out.println("DEBUG: values: " + Arrays.toString(testResults));
+                // System.out.println("DEBUG: best individual's operators this iteration:\n"+ Arrays.toString(population.get((int) testResults[2]).operators));
+                System.out.println("DEBUG: values [bestIdx, bestFitness, bestPassFrac, avgFitness]: " + Arrays.toString(testResults));
                 // if all tests pass then we found a fix.
-                if(testResults[0] != 1) {
+                if(testResults[2] != 1.0) {
                         return false;
                 }
+                System.out.println("\nAlgorithm finished.\n");
                 return true;
         }
         
@@ -313,6 +322,11 @@ public class PatchingLab {
                 // if(!out.contains("no transition")) {
                 //     System.out.println(out);
                 // }
+        }
+
+        // Helper for debugging (this implementation is not foolproof)
+        public static void PRINT_FUNCTION_NAME(){
+                System.out.println(Thread.currentThread().getStackTrace()[2].getMethodName());;
         }
 }
 
