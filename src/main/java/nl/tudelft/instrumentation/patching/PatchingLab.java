@@ -11,7 +11,7 @@ public class PatchingLab {
         private static final int      POPULATION_SIZE = 10; // must be an even number
         private static final double   SURVIVOR_FRACTION = 0.5; // what fraction of population survives selection process
         private static final float    MUTATION_RATE = 0.2f;
-        private static final int      NUM_TOP_TARANTULA_SCORES = 3; 
+        private static final int      NUM_TOP_TARANTULA_SCORES = 6; 
         private static final int      NUM_MUTATIONS = 2;
         // Constants
         private static final String[] POSSIBLE_OPERATORS = {"!=", "==", "<", ">", "<=", ">="};
@@ -92,9 +92,14 @@ public class PatchingLab {
                         int dummyVar = result ? totalResults[PASS]++ : totalResults[FAIL]++;
                 }
                 // divide by the maximal total value to get a number <= 1;
-                return (positiveWeight*totalResults[PASS] - negativeWeight*totalResults[FAIL]) / (positiveWeight * testResults.size());
-                // return positiveWeight*totalResults[PASS] - negativeWeight*totalResults[FAIL];
-                
+                // return (positiveWeight*totalResults[PASS] - negativeWeight*totalResults[FAIL]) / (positiveWeight * testResults.size());
+                return positiveWeight*totalResults[PASS] - negativeWeight*totalResults[FAIL];
+        }
+
+        private static int[] countTotalResults(List<Boolean> testResults) {
+                int trueCount = 0;
+                for (boolean bool : testResults) {if (bool) {trueCount++;}}
+                return new int[] {trueCount, testResults.size() - trueCount};
         }
 
         private static int[] countLineResults(List<Boolean> testResults, List<Integer> coveringTests) {
@@ -110,10 +115,11 @@ public class PatchingLab {
         private static double[] computeTarantulaScores(List<Boolean> testResults, int numOperators, Map<Integer, List<Integer>> testSpectrum) {
                 int PASS = 0, FAIL = 1;
                 double[] scores = new double[numOperators];
+                int[] totalResults = countTotalResults(testResults);
                 for (int operatorNumber = 0; operatorNumber < numOperators; operatorNumber++) {
                         int[] results = countLineResults(testResults, testSpectrum.getOrDefault(operatorNumber, new ArrayList<>()));
-                        if (results[PASS] == 0 && results[FAIL] == 0) {scores[operatorNumber] = -1;}
-                        else {scores[operatorNumber] = (double) results[FAIL] / (double) (results[PASS] + results[FAIL]);}
+                        if (results[PASS] == 0 && results[FAIL] == 0) {scores[operatorNumber] = 0;}
+                        else {scores[operatorNumber] = ((double) results[FAIL] / totalResults[FAIL] ) / ( ( (double) results[PASS] / totalResults[PASS]) + ( (double) results[FAIL] / totalResults[FAIL]) );}
                 }
                 return scores;
         }
@@ -121,6 +127,7 @@ public class PatchingLab {
         private static int computeRandomDuelLoser(List<Individual> population) {
                 int firstIdx = RNG.nextInt(population.size());
                 int secondIdx = RNG.nextInt(population.size());
+                System.out.println("DEBUG: duel: " + firstIdx + " vs " + secondIdx);
                 Individual first = population.get(firstIdx);
                 Individual second = population.get(secondIdx);
                 int loserIdx =  first.fitnessScore  > second.fitnessScore ? secondIdx :
@@ -154,7 +161,7 @@ public class PatchingLab {
 
         /// RUN TESTS ///
 
-        // Wrapper for (impure) functional management of operator string array and test spectrum during test runs
+        // Wrapper for management of operator string array and test spectrum during test runs
         private static List<Boolean> runTests(String[] operators) {
                 currentTestSpectrum.clear();
                 OperatorTracker.operators = operators;
@@ -175,7 +182,8 @@ public class PatchingLab {
                 assert(population.size() % 2 == 0) : "Uneven population size, please specify an even number of individuals.";
 
                 // Run tests on all individuals in the population
-                runAllTests(population);
+                System.out.println("DEBUG: population.size()" + population.size());
+                // runAllTests(population);
 
                 // Iterate over population
                 while (population.size() > SURVIVOR_FRACTION * POPULATION_SIZE) {
@@ -191,7 +199,7 @@ public class PatchingLab {
                 Arrays.sort(sortedtarantulaScores);
                 sortedtarantulaScores = Arrays.copyOfRange(sortedtarantulaScores, sortedtarantulaScores.length-NUM_TOP_TARANTULA_SCORES, sortedtarantulaScores.length);
                 assert(sortedtarantulaScores.length == NUM_TOP_TARANTULA_SCORES);
-                ArrayUtils.reverse(sortedtarantulaScores);
+                // ArrayUtils.reverse(sortedtarantulaScores);
                 Collections.shuffle(Arrays.asList(sortedtarantulaScores));
                 for (int i = 0; i < mutationIndices.length; i++) {
                         mutationIndices[i] = indexOf(sortedtarantulaScores[sortedtarantulaScores.length - i - 1], tarantulaScores);
@@ -248,6 +256,7 @@ public class PatchingLab {
                 //  - Check if you need to ignore the newly added individuals.
                 //  - Check if the size of the population should stay equal.
                 while (population.size() < POPULATION_SIZE) {
+                        System.out.println("DEBUG: crossover() population.size()" + population.size());
                         population.add(singlePointCrossover(population.get(RNG.nextInt(population.size())), population.get(RNG.nextInt(population.size()))));
                 }
         }
@@ -258,10 +267,16 @@ public class PatchingLab {
         static void run() {
                 boolean isFinished = false;
 
+                int trueCount = 0;
+                List<Boolean> initialTestResults = OperatorTracker.runAllTests();
+                for (boolean bool : initialTestResults) {if (bool) {trueCount++;}}
+                System.out.println("DEBUG: trueCount / numTests: " + trueCount + " / " + initialTestResults.size());
+
                 // Initial population
                 initialize();
 
                 while (!isFinished) {
+                        runAllTests(population);
                         isFinished = monitor();
 
                         // Selection
@@ -279,10 +294,12 @@ public class PatchingLab {
 
         private static double[] bestResults() {
                 double[] testResults = new double[3];
-                double best = -1;
+                double best = Double.NEGATIVE_INFINITY;
                 double average = 0;
                 int bestIdx = -1;
+
                 for(int i = 0; i < population.size(); i++) {
+                        System.out.println("DEBUG: population.get(i).fitnessScore: " + population.get(i).fitnessScore);
                         if(population.get(i).fitnessScore > best) {
                                 best = population.get(i).fitnessScore;
                                 bestIdx = i;
