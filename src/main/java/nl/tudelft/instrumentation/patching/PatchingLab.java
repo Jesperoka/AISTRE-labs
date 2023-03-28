@@ -11,14 +11,16 @@ public class PatchingLab {
         // Hyperparameters
         private static final int      POPULATION_SIZE = 50; // must be an even number
         private static final double   SURVIVOR_FRACTION = 0.5; // what fraction of population survives selection process
-        private static final float    MUTATION_RATE = 0.2f;
-        private static final int      INITIAL_NUM_TOP_TARANTULA_SCORES = 2; 
+        private static final float    MUTATION_RATE = 0.15f;
+        private static final int      INITIAL_NUM_TOP_TARANTULA_SCORES = 4;
         private static final int      INITIAL_NUM_MUTATIONS = 2;
         private static final int      INITAL_PATIENCE = 25;
         // Constants
         private static final String[] POSSIBLE_OPERATORS = {"!=", "==", "<", ">", "<=", ">="};
         private static final Random   RNG = new Random();
         private static final int      NUM_OPERATORS = OperatorTracker.operators.length;
+
+        private static Individual ancestor;
 
         // EA state
         private static class Individual {
@@ -57,7 +59,7 @@ public class PatchingLab {
                 static int numTarantulaScores = INITIAL_NUM_TOP_TARANTULA_SCORES;
                 static int numMutations = INITIAL_NUM_MUTATIONS;
                 static int patience = INITAL_PATIENCE;
-                static void safelyIncrementTarantula() { numTarantulaScores = numTarantulaScores < NUM_OPERATORS ? numTarantulaScores + 1 : numTarantulaScores; }
+                static void safelyIncrementTarantula() { numTarantulaScores = numTarantulaScores < NUM_OPERATORS /2 ? numTarantulaScores + 1 : numTarantulaScores; }
                 static void safelyDecrementTarantula() { numTarantulaScores = numTarantulaScores > 1 ? numTarantulaScores - 1 : numTarantulaScores; }
                 // static void safelyIncrementMutations() { numMutations = numMutations < NUM_OPERATORS ? numMutations + 1 : numMutations; }
                 // static void safelyDecrementMutations() { numMutations = numMutations > 1 ? numMutations - 1 : numMutations; }
@@ -118,13 +120,20 @@ public class PatchingLab {
                 int PASS = 0, FAIL = 1;
                 int[] totalResults = {0, 0};
                 double positiveWeight = 0.1, negativeWeight = 10;
-                for (Boolean result : testResults) {
-                        int dummyVar = result ? totalResults[PASS]++ : totalResults[FAIL]++;
+                int failedPassing = 0;
+                for (int i = 0; i < testResults.size(); i++) {
+                        Boolean result = testResults.get(i);
+                        if (result) {
+                                totalResults[PASS]++;
+                        } else {
+                                if(ancestor.testResults.get(i)) {
+                                        failedPassing++;
+                                }
+                                totalResults[FAIL]++;
+                        }
                 }
-                // divide by the maximal total value to get a number <= 1;
-                // return (positiveWeight*totalResults[PASS] - negativeWeight*totalResults[FAIL]) / (positiveWeight * testResults.size());
-                // return positiveWeight*totalResults[PASS] - negativeWeight*totalResults[FAIL];
-                return -negativeWeight*totalResults[FAIL];
+                return -positiveWeight*totalResults[PASS] - negativeWeight * (totalResults[FAIL] - failedPassing) - 11 * failedPassing;
+                //return -negativeWeight*totalResults[FAIL];
         }
 
         private static int[] countTotalResults(List<Boolean> testResults) {
@@ -150,6 +159,7 @@ public class PatchingLab {
                 for (int operatorNumber = 0; operatorNumber < numOperators; operatorNumber++) {
                         int[] results = countLineResults(testResults, testSpectrum.getOrDefault(operatorNumber, new ArrayList<>()));
                         if (results[PASS] == 0 && results[FAIL] == 0) {scores[operatorNumber] = 0;} // TODO: think, should this be like 0.1? because we want to eventually try these as well if we are stuck
+                        else if (totalResults[PASS] == 0) { scores[operatorNumber] = 1; }
                         else {scores[operatorNumber] = ((double) results[FAIL] / totalResults[FAIL] ) / ( ( (double) results[PASS] / totalResults[PASS]) + ( (double) results[FAIL] / totalResults[FAIL]) );}
                 }
                 return scores;
@@ -178,15 +188,16 @@ public class PatchingLab {
         private static void initialize(){
                 java.util.Arrays.fill(operatorTypes, typeEnum.UNDEFINED);
 
-                Individual ancestor = new Individual() {{operators = OperatorTracker.operators.clone();}};
+                ancestor = new Individual() {{operators = OperatorTracker.operators.clone();}};
                 ancestor.testResults = runTests(ancestor.operators);
                 ancestor.tarantulaScores = computeTarantulaScores(ancestor.testResults, NUM_OPERATORS, currentTestSpectrum);
 
-                for (int i = 0; i < POPULATION_SIZE; i++) {
+                for (int i = 0; i < POPULATION_SIZE - 1; i++) {
                         Individual offspring = new Individual() {{operators = ancestor.operators.clone();}};
                         offspring.mutate(tarantulaIndices(ancestor.tarantulaScores));
                         population.add(offspring);
                 }
+                population.add(ancestor);
         }
 
         /// RUN TESTS ///
@@ -257,7 +268,7 @@ public class PatchingLab {
          */
         private static Individual singlePointCrossover(Individual A, Individual B) {
                 // TODO check if we want to set this point at the halfway mark.
-                return singlePointCrossover(A, B, A.operators.length/2);
+                return singlePointCrossover(A, B, RNG.nextInt(A.operators.length));
         }
 
         // For if you want to set the crossoverPoint yourself.
@@ -274,6 +285,22 @@ public class PatchingLab {
                 return n;
         }
 
+        private static Individual randomNew() {
+                Individual random = new Individual();
+                random.operators = ancestor.operators.clone();
+                for (int i = 0; i < NUM_OPERATORS; i++) {
+                        if(ancestor.tarantulaScores[i] > 0.5) {
+                                int length;
+                                if (operatorTypes[i] == typeEnum.INT) {length = POSSIBLE_OPERATORS.length;}
+                                else if (operatorTypes[i] == typeEnum.BOOL) {length = 2;}
+                                else { throw new IllegalArgumentException("Cannot mutate UNDEFINED operator type"); }
+                                random.operators[i] = POSSIBLE_OPERATORS[RNG.nextInt(length)];
+                        }
+
+                }
+                return random;
+        }
+
         /**
          * Method that takes the population left after selection and generates new individuals based on the living individuals.
          */
@@ -283,9 +310,13 @@ public class PatchingLab {
                 //  - Check if you need to ignore the newly added individuals.
                 //  - Check if the size of the population should stay equal.
                 List<Individual> nextGenerationPopulation = new ArrayList(POPULATION_SIZE);
+                for(int i = 0; i < 2; i++) {
+                        nextGenerationPopulation.add(randomNew());
+                }
                 while (nextGenerationPopulation.size() < POPULATION_SIZE) {
                         nextGenerationPopulation.add(singlePointCrossover(population.get(RNG.nextInt(population.size())), population.get(RNG.nextInt(population.size()))));
                 }
+                population = nextGenerationPopulation;
         }
 
         /**
@@ -342,11 +373,11 @@ public class PatchingLab {
                 System.out.println("DEBUG: values [bestIdx, bestFitness, bestPassFrac, avgFitness]: " + Arrays.toString(testResults));
 
                 MutationScheduler.update(testResults[1]); // make sure to pass the correct value here
-                System.out.println("DEBUG: MutationScheduler.numTarantulaScores: " + MutationScheduler.numTarantulaScores);
-                System.out.println("DEBUG: MutationScheduler.numMutations: " + MutationScheduler.numMutations);
-                System.out.println("DEBUG: MutationScheduler.numStuck: " + MutationScheduler.numStuck);
-                System.out.println("DEBUG: MutationScheduler.numWorse: " + MutationScheduler.numWorse);
-                System.out.println("DEBUG: MutationScheduler.patience: " + MutationScheduler.patience);
+                // System.out.println("DEBUG: MutationScheduler.numTarantulaScores: " + MutationScheduler.numTarantulaScores);
+                // System.out.println("DEBUG: MutationScheduler.numMutations: " + MutationScheduler.numMutations);
+                // System.out.println("DEBUG: MutationScheduler.numStuck: " + MutationScheduler.numStuck);
+                // System.out.println("DEBUG: MutationScheduler.numWorse: " + MutationScheduler.numWorse);
+                // System.out.println("DEBUG: MutationScheduler.patience: " + MutationScheduler.patience);
 
                 // 1. store a history of testResults[2]
                 // output something at the end
