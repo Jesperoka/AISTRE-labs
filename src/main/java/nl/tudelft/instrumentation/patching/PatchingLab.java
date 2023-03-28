@@ -8,13 +8,15 @@ import org.apache.commons.lang3.ArrayUtils;
 
 public class PatchingLab {
 
+        private static List<Double> bestFitnessPerGeneration = new ArrayList<>();
+
         // Hyperparameters
         private static final int      POPULATION_SIZE = 44; // must be an even number
         private static final double   SURVIVOR_FRACTION = 0.5; // what fraction of population survives selection process
-        private static final float    MUTATION_RATE = 0.3f;
-        private static final int      INITIAL_NUM_TOP_TARANTULA_SCORES = 20;
+        private static final float    MUTATION_RATE = 0.2f;
+        private static final int      INITIAL_NUM_TOP_TARANTULA_SCORES = 25;
         private static final int      INITIAL_NUM_MUTATIONS = 1;
-        private static final int      INITAL_PATIENCE = 25;
+        private static final int      INITAL_PATIENCE = 100;
         // Constants
         private static final String[] POSSIBLE_OPERATORS = {"!=", "==", "<", ">", "<=", ">="};
         private static final Random   RNG = new Random();
@@ -39,7 +41,7 @@ public class PatchingLab {
                         for (int idx : mutationIndices) {
                                 if (operatorTypes[idx] == typeEnum.INT) {length = POSSIBLE_OPERATORS.length;}
                                 else if (operatorTypes[idx] == typeEnum.BOOL) {length = 2;} 
-                                else {  // Special case, operator wasn't covered by any tests. Let's mutate it anyway.
+                                else {  // Special case, operator wasn't covered by any tests. Let's mutate it anyway (and hope for the best regarding type).
                                         length = POSSIBLE_OPERATORS.length;
                                         // throw new IllegalArgumentException("Cannot mutate UNDEFINED operator type"); 
                                 }
@@ -78,7 +80,7 @@ public class PatchingLab {
                         patience = patienceFunction();
                         if (numStuck > patience) { safelyIncrementTarantula(); }; // IDEA: have numTarantulaScores follow NUM_OPERATORS*sin(0.1x) or something instead.
                         if (numWorse > patience) { safelyDecrementTarantula(); };
-                        // if (numStuck > 3*patience) { safelyIncrementMutations(); };
+                        // if (numStuck > 2*patience) { safelyDecrementMutations(); };
                         // if (numWorse > 3*patience) { safelyDecrementMutations(); };
                         previousResult = iterationResults; // copy?
                         iteration++;
@@ -163,7 +165,7 @@ public class PatchingLab {
                 for (int operatorNumber = 0; operatorNumber < numOperators; operatorNumber++) {
                         int[] results = countLineResults(testResults, testSpectrum.getOrDefault(operatorNumber, new ArrayList<>()));
                         if (results[PASS] == 0 && results[FAIL] == 0) {scores[operatorNumber] = 0.1;} // Some small value, cause' it is a bit suspicious.
-                        else if (totalResults[PASS] == 0) { scores[operatorNumber] = 1; } // this is bad, but its all equally bad.
+                        else if (totalResults[PASS] == 0) { scores[operatorNumber] = 0.05; } // this is bad, but its all equally bad.
                         else if (totalResults[FAIL] == 0) { scores[operatorNumber] = 0; } // don't really care, this case means we won.
                         else {scores[operatorNumber] = ((double) results[FAIL] / totalResults[FAIL] ) / ( ( (double) results[PASS] / totalResults[PASS]) + ( (double) results[FAIL] / totalResults[FAIL]) );}
                 }
@@ -249,9 +251,10 @@ public class PatchingLab {
                 sortedtarantulaScores = Arrays.copyOfRange(sortedtarantulaScores, sortedtarantulaScores.length-MutationScheduler.numTarantulaScores, sortedtarantulaScores.length);
                 assert(sortedtarantulaScores.length == MutationScheduler.numTarantulaScores);
                 ArrayUtils.shuffle(sortedtarantulaScores);
+   
                 for (int i = 0; i < mutationIndices.length; i++) {
                         // mutationIndices[i] = indexOf(sortedtarantulaScores[sortedtarantulaScores.length - scoreIdx - 1], tarantulaScores);
-                        mutationIndices[i] = indexOf(sortedtarantulaScores[sortedtarantulaScores.length - i - 1], tarantulaScores);
+                        mutationIndices[i] = indexOf(sortedtarantulaScores[i], tarantulaScores);
                 }
                 return mutationIndices;
         }
@@ -340,12 +343,19 @@ public class PatchingLab {
         static void run() {
                 boolean isFinished = false;
 
+                long startTime = System.currentTimeMillis();
+
                 // Initial population
                 initialize();
 
                 while (!isFinished) {
                         runAllTests(population);
-                        isFinished = monitor();
+
+                        // Also end the test when 30 min have passed
+                        //isFinished = monitor() || System.currentTimeMillis() - startTime > 1800000;
+
+                        isFinished = monitor() || System.currentTimeMillis() - startTime > 18000;
+
 
                         // Selection
                         selection();
@@ -356,6 +366,14 @@ public class PatchingLab {
                         // Mutation 
                         mutation();
                 }
+                for(Double fitness : bestFitnessPerGeneration) {
+                        System.out.print(fitness + ", ");
+                }
+
+                int[] res = countTotalResults(ancestor.testResults);
+                double frac = (double) res[0] / res[0] + res[1];
+                System.out.println("total number of generations run" + bestFitnessPerGeneration.size());
+                System.out.println("ancestor: " + frac);
         }
 
         /// HELPER METHODS ///
@@ -386,7 +404,7 @@ public class PatchingLab {
         private static boolean monitor() {
                 double[] testResults = bestResults();
                 System.out.println("DEBUG: values [bestIdx, bestFitness, bestPassFrac, avgFitness]: " + Arrays.toString(testResults));
-
+                bestFitnessPerGeneration.add(testResults[2]);
                 MutationScheduler.iteration++;
 
                 //MutationScheduler.update(testResults[1]); // make sure to pass the correct value here
@@ -400,7 +418,7 @@ public class PatchingLab {
                 for (typeEnum operatorType : operatorTypes) { // for debugging
                         if (operatorType == typeEnum.UNDEFINED) {uncoveredOperators++;}
                 }
-                System.out.println("DEBUG: uncoveredOperators after test run "+MutationScheduler.iteration+": " + uncoveredOperators);
+                System.out.println("DEBUG: uncoveredOperators: " + uncoveredOperators);
 
                 // 1. store a history of testResults[2]
                 // output something at the end
