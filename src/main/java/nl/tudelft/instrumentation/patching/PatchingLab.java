@@ -12,7 +12,7 @@ public class PatchingLab {
         private static final int      POPULATION_SIZE = 44; // must be an even number
         private static final double   SURVIVOR_FRACTION = 0.5; // what fraction of population survives selection process
         private static final float    MUTATION_RATE = 0.2f;
-        private static final int      INITIAL_NUM_TOP_TARANTULA_SCORES = 5; 
+        private static final int      INITIAL_NUM_TOP_TARANTULA_SCORES = 5;
         private static final int      INITIAL_NUM_MUTATIONS = 2;
         private static final int      INITAL_PATIENCE = 25;
         // Constants
@@ -121,10 +121,9 @@ public class PatchingLab {
                 for (Boolean result : testResults) {
                         int dummyVar = result ? totalResults[PASS]++ : totalResults[FAIL]++;
                 }
-                // divide by the maximal total value to get a number <= 1;
-                // return (positiveWeight*totalResults[PASS] - negativeWeight*totalResults[FAIL]) / (positiveWeight * testResults.size());
-                return positiveWeight*totalResults[PASS] - negativeWeight*totalResults[FAIL];
-                // return -negativeWeight*totalResults[FAIL];
+                // return totalResults[PASS] / (totalResults[PASS] + totalResults[FAIL]); // last year TA fitness function
+                return -positiveWeight*totalResults[PASS] - negativeWeight*totalResults[FAIL]; // yes both terms are supposed to have the same sign
+                // return -totalResults[FAIL]; // Simple failed test count
         }
 
         private static int[] countTotalResults(List<Boolean> testResults) {
@@ -259,37 +258,41 @@ public class PatchingLab {
          * @param B The second individual
          * @return Returns a new individual based on the parents A and B.
          */
-        private static Individual singlePointCrossover(Individual A, Individual B) {
+        private static Individual[] singlePointCrossover(Individual A, Individual B) {
                 // TODO check if we want to set this point at the halfway mark.
                 return singlePointCrossover(A, B, A.operators.length/2);
         }
 
         // For if you want to set the crossoverPoint yourself.
         // TODO check if this is necessary.
-        private static Individual singlePointCrossover(Individual A, Individual B, int crossoverPoint) {
+        private static Individual[] singlePointCrossover(Individual A, Individual B, int crossoverPoint) {
                 assert(crossoverPoint > 0 && crossoverPoint < A.operators.length) : "SPC: The crossoverPoint should be within the array for it to make sense.";
-                assert(A.operators.length == B.operators.length) : "SPC: Both individuals should have the same operator list size.";
-                Individual n = new Individual();
-                n.operators = new String[A.operators.length];
-                for(int j = 0; j < n.operators.length; j++) {
-                        n.operators[j] = j > crossoverPoint ? A.operators[j] : B.operators[j];
+                assert(A.operators.length == B.operators.length && A.operators.length == NUM_OPERATORS) : "SPC: Both individuals should have the same operator list size.";
+                Individual child1 = new Individual();
+                Individual child2 = new Individual();
+                child1.operators = new String[NUM_OPERATORS];
+                child2.operators = new String[NUM_OPERATORS];
+                for(int j = 0; j < NUM_OPERATORS; j++) {
+                        child1.operators[j] = j > crossoverPoint ? A.operators[j] : B.operators[j];
+                        child2.operators[j] = j <= crossoverPoint ? A.operators[j] : B.operators[j];
                 }
-                n.newChild = true;
-                return n;
+                child1.newChild = true; // TODO: dont need anymore
+                child2.newChild = true; // TODO: dont need anymore
+                return new Individual[] {child1, child2};
         }
 
         /**
          * Method that takes the population left after selection and generates new individuals based on the living individuals.
          */
         private static void crossover() {
-                // TODO make create a better method for this.
-                //  - Ensure it cannot take the same one twice.
-                //  - Check if you need to ignore the newly added individuals.
-                //  - Check if the size of the population should stay equal.
+               
                 List<Individual> nextGenerationPopulation = new ArrayList(POPULATION_SIZE);
                 while (nextGenerationPopulation.size() < POPULATION_SIZE) {
-                        nextGenerationPopulation.add(singlePointCrossover(population.get(RNG.nextInt(population.size())), population.get(RNG.nextInt(population.size()))));
+                        Individual[] children = singlePointCrossover(population.get(RNG.nextInt(population.size())), population.get(RNG.nextInt(population.size())));
+                        nextGenerationPopulation.add(children[0]);
+                        nextGenerationPopulation.add(children[1]);
                 }
+                assert(nextGenerationPopulation.size() == POPULATION_SIZE);
                 population = nextGenerationPopulation;
         }
 
@@ -333,7 +336,7 @@ public class PatchingLab {
                                 int[] totalResults = countTotalResults(population.get(i).testResults);
                                 bestPassFrac = (double) totalResults[0] / (totalResults[0] + totalResults[1]);
                         }
-                        average+=population.get(i).fitnessScore;
+                        average += population.get(i).fitnessScore;
                 }
                 testResults[0] = (double) bestIdx; // yes its a double but whatever, just cast back and forth
                 testResults[1] = best;
