@@ -282,8 +282,9 @@ public class PatchingLab {
                 //  - Ensure it cannot take the same one twice.
                 //  - Check if you need to ignore the newly added individuals.
                 //  - Check if the size of the population should stay equal.
-                while (population.size() < POPULATION_SIZE) {
-                        population.add(singlePointCrossover(population.get(RNG.nextInt(population.size())), population.get(RNG.nextInt(population.size()))));
+                List<Individual> nextGenerationPopulation = new ArrayList(POPULATION_SIZE);
+                while (nextGenerationPopulation.size() < POPULATION_SIZE) {
+                        nextGenerationPopulation.add(singlePointCrossover(population.get(RNG.nextInt(population.size())), population.get(RNG.nextInt(population.size()))));
                 }
         }
 
