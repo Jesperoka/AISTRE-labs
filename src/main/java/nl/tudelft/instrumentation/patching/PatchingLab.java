@@ -9,10 +9,10 @@ import org.apache.commons.lang3.ArrayUtils;
 public class PatchingLab {
 
         // Hyperparameters
-        private static final int      POPULATION_SIZE = 50; // must be an even number
+        private static final int      POPULATION_SIZE = 44; // must be an even number
         private static final double   SURVIVOR_FRACTION = 0.5; // what fraction of population survives selection process
-        private static final float    MUTATION_RATE = 0.15f;
-        private static final int      INITIAL_NUM_TOP_TARANTULA_SCORES = 4;
+        private static final float    MUTATION_RATE = 0.2f;
+        private static final int      INITIAL_NUM_TOP_TARANTULA_SCORES = 5;
         private static final int      INITIAL_NUM_MUTATIONS = 2;
         private static final int      INITAL_PATIENCE = 25;
         // Constants
@@ -39,8 +39,11 @@ public class PatchingLab {
                         for (int idx : mutationIndices) {
                                 if (operatorTypes[idx] == typeEnum.INT) {length = POSSIBLE_OPERATORS.length;}
                                 else if (operatorTypes[idx] == typeEnum.BOOL) {length = 2;} 
-                                else { throw new IllegalArgumentException("Cannot mutate UNDEFINED operator type"); }
-                                operators[idx] = POSSIBLE_OPERATORS[RNG.nextInt(length)];
+                                else {  // Special case, operator wasn't covered by any tests. Let's mutate it anyway.
+                                        length = POSSIBLE_OPERATORS.length;
+                                        // throw new IllegalArgumentException("Cannot mutate UNDEFINED operator type"); 
+                                }
+                                operators[idx] = POSSIBLE_OPERATORS[RNG.nextInt(length)];       
                         }
                 }
 
@@ -51,6 +54,7 @@ public class PatchingLab {
                 BOOL,
                 UNDEFINED
         }
+        private static int uncoveredOperators = 0;
         private static typeEnum[] operatorTypes = new typeEnum[NUM_OPERATORS];
         private static List<Individual> population = new ArrayList<>();
         private static Map<Integer, List<Integer>> currentTestSpectrum = new HashMap<>(); // scary global variable updated by functions based on async behavior
@@ -158,8 +162,9 @@ public class PatchingLab {
                 int[] totalResults = countTotalResults(testResults);
                 for (int operatorNumber = 0; operatorNumber < numOperators; operatorNumber++) {
                         int[] results = countLineResults(testResults, testSpectrum.getOrDefault(operatorNumber, new ArrayList<>()));
-                        if (results[PASS] == 0 && results[FAIL] == 0) {scores[operatorNumber] = 0;} // TODO: think, should this be like 0.1? because we want to eventually try these as well if we are stuck
-                        else if (totalResults[PASS] == 0) { scores[operatorNumber] = 1; }
+                        if (results[PASS] == 0 && results[FAIL] == 0) {scores[operatorNumber] = 0.1;} // Some small value, cause' it is a bit suspicious.
+                        else if (totalResults[PASS] == 0) { scores[operatorNumber] = 1; } // this is bad, but its all equally bad.
+                        else if (totalResults[FAIL] == 0) { scores[operatorNumber] = 0; } // don't really care, this case means we won.
                         else {scores[operatorNumber] = ((double) results[FAIL] / totalResults[FAIL] ) / ( ( (double) results[PASS] / totalResults[PASS]) + ( (double) results[FAIL] / totalResults[FAIL]) );}
                 }
                 return scores;
@@ -180,6 +185,7 @@ public class PatchingLab {
                 for (int i = 0; i < array.length; i++){
                         if (value == array[i]) {return i;}
                 }
+                System.out.println("indexOf() couldn't find index, got value: " + value +" and array: "+ Arrays.toString(array));
                 return -1;
         }
 
@@ -191,8 +197,12 @@ public class PatchingLab {
                 ancestor = new Individual() {{operators = OperatorTracker.operators.clone();}};
                 ancestor.testResults = runTests(ancestor.operators);
                 ancestor.tarantulaScores = computeTarantulaScores(ancestor.testResults, NUM_OPERATORS, currentTestSpectrum);
+                for (typeEnum operatorType : operatorTypes) { // for debugging
+                        if (operatorType == typeEnum.UNDEFINED) {uncoveredOperators++;}
+                }
+                System.out.println("DEBUG: uncoveredOperators after first test run: " + uncoveredOperators);
 
-                for (int i = 0; i < POPULATION_SIZE - 1; i++) {
+                for (int i = 0; i < POPULATION_SIZE; i++) {
                         Individual offspring = new Individual() {{operators = ancestor.operators.clone();}};
                         offspring.mutate(tarantulaIndices(ancestor.tarantulaScores));
                         population.add(offspring);
@@ -237,6 +247,7 @@ public class PatchingLab {
                 Arrays.sort(sortedtarantulaScores);
                 int scoreIdx = Math.min((int)Math.floor(Math.abs(0.25*RNG.nextGaussian()*MutationScheduler.numTarantulaScores)), MutationScheduler.numTarantulaScores);
                 sortedtarantulaScores = Arrays.copyOfRange(sortedtarantulaScores, sortedtarantulaScores.length-MutationScheduler.numTarantulaScores, sortedtarantulaScores.length);
+                assert(sortedtarantulaScores.length == MutationScheduler.numTarantulaScores);
                 // ArrayUtils.shuffle(sortedtarantulaScores);
                 for (int i = 0; i < mutationIndices.length; i++) {
                         mutationIndices[i] = indexOf(sortedtarantulaScores[sortedtarantulaScores.length - scoreIdx - 1], tarantulaScores);
@@ -266,23 +277,27 @@ public class PatchingLab {
          * @param B The second individual
          * @return Returns a new individual based on the parents A and B.
          */
-        private static Individual singlePointCrossover(Individual A, Individual B) {
+        private static Individual[] singlePointCrossover(Individual A, Individual B) {
                 // TODO check if we want to set this point at the halfway mark.
                 return singlePointCrossover(A, B, RNG.nextInt(A.operators.length));
         }
 
         // For if you want to set the crossoverPoint yourself.
         // TODO check if this is necessary.
-        private static Individual singlePointCrossover(Individual A, Individual B, int crossoverPoint) {
+        private static Individual[] singlePointCrossover(Individual A, Individual B, int crossoverPoint) {
                 assert(crossoverPoint > 0 && crossoverPoint < A.operators.length) : "SPC: The crossoverPoint should be within the array for it to make sense.";
-                assert(A.operators.length == B.operators.length) : "SPC: Both individuals should have the same operator list size.";
-                Individual n = new Individual();
-                n.operators = new String[A.operators.length];
-                for(int j = 0; j < n.operators.length; j++) {
-                        n.operators[j] = j > crossoverPoint ? A.operators[j] : B.operators[j];
+                assert(A.operators.length == B.operators.length && A.operators.length == NUM_OPERATORS) : "SPC: Both individuals should have the same operator list size.";
+                Individual child1 = new Individual();
+                Individual child2 = new Individual();
+                child1.operators = new String[NUM_OPERATORS];
+                child2.operators = new String[NUM_OPERATORS];
+                for(int j = 0; j < NUM_OPERATORS; j++) {
+                        child1.operators[j] = j > crossoverPoint ? A.operators[j] : B.operators[j];
+                        child2.operators[j] = j <= crossoverPoint ? A.operators[j] : B.operators[j];
                 }
-                n.newChild = true;
-                return n;
+                child1.newChild = true; // TODO: dont need anymore
+                child2.newChild = true; // TODO: dont need anymore
+                return new Individual[] {child1, child2};
         }
 
         private static Individual randomNew() {
@@ -305,17 +320,17 @@ public class PatchingLab {
          * Method that takes the population left after selection and generates new individuals based on the living individuals.
          */
         private static void crossover() {
-                // TODO make create a better method for this.
-                //  - Ensure it cannot take the same one twice.
-                //  - Check if you need to ignore the newly added individuals.
-                //  - Check if the size of the population should stay equal.
+               
                 List<Individual> nextGenerationPopulation = new ArrayList(POPULATION_SIZE);
                 for(int i = 0; i < 2; i++) {
                         nextGenerationPopulation.add(randomNew());
                 }
                 while (nextGenerationPopulation.size() < POPULATION_SIZE) {
-                        nextGenerationPopulation.add(singlePointCrossover(population.get(RNG.nextInt(population.size())), population.get(RNG.nextInt(population.size()))));
+                        Individual[] children = singlePointCrossover(population.get(RNG.nextInt(population.size())), population.get(RNG.nextInt(population.size())));
+                        nextGenerationPopulation.add(children[0]);
+                        nextGenerationPopulation.add(children[1]);
                 }
+                assert(nextGenerationPopulation.size() == POPULATION_SIZE);
                 population = nextGenerationPopulation;
         }
 
@@ -359,7 +374,7 @@ public class PatchingLab {
                                 int[] totalResults = countTotalResults(population.get(i).testResults);
                                 bestPassFrac = (double) totalResults[0] / (totalResults[0] + totalResults[1]);
                         }
-                        average+=population.get(i).fitnessScore;
+                        average += population.get(i).fitnessScore;
                 }
                 testResults[0] = (double) bestIdx; // yes its a double but whatever, just cast back and forth
                 testResults[1] = best;
@@ -378,6 +393,12 @@ public class PatchingLab {
                 // System.out.println("DEBUG: MutationScheduler.numStuck: " + MutationScheduler.numStuck);
                 // System.out.println("DEBUG: MutationScheduler.numWorse: " + MutationScheduler.numWorse);
                 // System.out.println("DEBUG: MutationScheduler.patience: " + MutationScheduler.patience);
+
+                uncoveredOperators = 0;
+                for (typeEnum operatorType : operatorTypes) { // for debugging
+                        if (operatorType == typeEnum.UNDEFINED) {uncoveredOperators++;}
+                }
+                System.out.println("DEBUG: uncoveredOperators after test run "+MutationScheduler.iteration+": " + uncoveredOperators);
 
                 // 1. store a history of testResults[2]
                 // output something at the end
