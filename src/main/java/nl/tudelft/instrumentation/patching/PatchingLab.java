@@ -37,7 +37,10 @@ public class PatchingLab {
                         for (int idx : mutationIndices) {
                                 if (operatorTypes[idx] == typeEnum.INT) {length = POSSIBLE_OPERATORS.length;}
                                 else if (operatorTypes[idx] == typeEnum.BOOL) {length = 2;} 
-                                else { throw new IllegalArgumentException("Cannot mutate UNDEFINED operator type"); }
+                                else {  // Special case, operator wasn't covered by any tests. Let's mutate it anyway.
+                                        length = POSSIBLE_OPERATORS.length;
+                                        // throw new IllegalArgumentException("Cannot mutate UNDEFINED operator type"); 
+                                }
                                 operators[idx] = POSSIBLE_OPERATORS[RNG.nextInt(length)];       
                         }
                 }
@@ -49,6 +52,7 @@ public class PatchingLab {
                 BOOL,
                 UNDEFINED
         }
+        private static int uncoveredOperators = 0;
         private static typeEnum[] operatorTypes = new typeEnum[NUM_OPERATORS];
         private static List<Individual> population = new ArrayList<>();
         private static Map<Integer, List<Integer>> currentTestSpectrum = new HashMap<>(); // scary global variable updated by functions based on async behavior
@@ -121,9 +125,9 @@ public class PatchingLab {
                 for (Boolean result : testResults) {
                         int dummyVar = result ? totalResults[PASS]++ : totalResults[FAIL]++;
                 }
+                // return -totalResults[FAIL]; // Simple failed test count
                 // return totalResults[PASS] / (totalResults[PASS] + totalResults[FAIL]); // last year TA fitness function
                 return -positiveWeight*totalResults[PASS] - negativeWeight*totalResults[FAIL]; // yes both terms are supposed to have the same sign
-                // return -totalResults[FAIL]; // Simple failed test count
         }
 
         private static int[] countTotalResults(List<Boolean> testResults) {
@@ -183,6 +187,11 @@ public class PatchingLab {
                 Individual ancestor = new Individual() {{operators = OperatorTracker.operators.clone();}};
                 ancestor.testResults = runTests(ancestor.operators);
                 ancestor.tarantulaScores = computeTarantulaScores(ancestor.testResults, NUM_OPERATORS, currentTestSpectrum);
+
+                for (typeEnum operatorType : operatorTypes) {
+                        if (operatorType == typeEnum.UNDEFINED) {uncoveredOperators++;}
+                }
+                System.out.println("DEBUG: uncoveredOperators after first test run: " + uncoveredOperators);
 
                 for (int i = 0; i < POPULATION_SIZE; i++) {
                         Individual offspring = new Individual() {{operators = ancestor.operators.clone();}};
@@ -355,6 +364,7 @@ public class PatchingLab {
                 System.out.println("DEBUG: MutationScheduler.numStuck: " + MutationScheduler.numStuck);
                 System.out.println("DEBUG: MutationScheduler.numWorse: " + MutationScheduler.numWorse);
                 System.out.println("DEBUG: MutationScheduler.patience: " + MutationScheduler.patience);
+                System.out.println("DEBUG: uncoveredOperators: " + uncoveredOperators);
 
                 // 1. store a history of testResults[2]
                 // output something at the end
