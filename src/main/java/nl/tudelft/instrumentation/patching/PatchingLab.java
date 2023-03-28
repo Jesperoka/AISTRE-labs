@@ -172,6 +172,7 @@ public class PatchingLab {
                 for (int i = 0; i < array.length; i++){
                         if (value == array[i]) {return i;}
                 }
+                System.out.println("indexOf() couldn't find index, got value: " + value +" and array: "+ Arrays.toString(array));
                 return -1;
         }
 
@@ -289,6 +290,7 @@ public class PatchingLab {
                 while (nextGenerationPopulation.size() < POPULATION_SIZE) {
                         nextGenerationPopulation.add(singlePointCrossover(population.get(RNG.nextInt(population.size())), population.get(RNG.nextInt(population.size()))));
                 }
+                population = nextGenerationPopulation;
         }
 
         /**
