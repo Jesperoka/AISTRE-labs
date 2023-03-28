@@ -178,12 +178,12 @@ public class PatchingLab {
         private static void initialize(){
                 java.util.Arrays.fill(operatorTypes, typeEnum.UNDEFINED);
 
-                Individual ancestor = new Individual() {{operators = OperatorTracker.operators;}};
+                Individual ancestor = new Individual() {{operators = OperatorTracker.operators.clone();}};
                 ancestor.testResults = runTests(ancestor.operators);
                 ancestor.tarantulaScores = computeTarantulaScores(ancestor.testResults, NUM_OPERATORS, currentTestSpectrum);
 
                 for (int i = 0; i < POPULATION_SIZE; i++) {
-                        Individual offspring = new Individual() {{operators = ancestor.operators;}};
+                        Individual offspring = new Individual() {{operators = ancestor.operators.clone();}};
                         offspring.mutate(tarantulaIndices(ancestor.tarantulaScores));
                         population.add(offspring);
                 }
@@ -346,6 +346,10 @@ public class PatchingLab {
                 System.out.println("DEBUG: MutationScheduler.numStuck: " + MutationScheduler.numStuck);
                 System.out.println("DEBUG: MutationScheduler.numWorse: " + MutationScheduler.numWorse);
                 System.out.println("DEBUG: MutationScheduler.patience: " + MutationScheduler.patience);
+
+                // 1. store a history of testResults[2]
+                // output something at the end
+                // python exec() each problem and exec(kill) after end output
 
                 if(testResults[2] != 1.0) {
                         return false;
