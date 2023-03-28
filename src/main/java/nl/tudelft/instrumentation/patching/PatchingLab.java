@@ -12,9 +12,9 @@ public class PatchingLab {
         private static final int      POPULATION_SIZE = 44; // must be an even number
         private static final double   SURVIVOR_FRACTION = 0.5; // what fraction of population survives selection process
         private static final float    MUTATION_RATE = 0.2f;
-        private static final int      INITIAL_NUM_TOP_TARANTULA_SCORES = 5;
-        private static final int      INITIAL_NUM_MUTATIONS = 2;
-        private static final int      INITAL_PATIENCE = 25;
+        private static final int      INITIAL_NUM_TOP_TARANTULA_SCORES = 25;
+        private static final int      INITIAL_NUM_MUTATIONS = 1;
+        private static final int      INITAL_PATIENCE = 100;
         // Constants
         private static final String[] POSSIBLE_OPERATORS = {"!=", "==", "<", ">", "<=", ">="};
         private static final Random   RNG = new Random();
@@ -37,7 +37,7 @@ public class PatchingLab {
                         for (int idx : mutationIndices) {
                                 if (operatorTypes[idx] == typeEnum.INT) {length = POSSIBLE_OPERATORS.length;}
                                 else if (operatorTypes[idx] == typeEnum.BOOL) {length = 2;} 
-                                else {  // Special case, operator wasn't covered by any tests. Let's mutate it anyway.
+                                else {  // Special case, operator wasn't covered by any tests. Let's mutate it anyway (and hope for the best regarding type).
                                         length = POSSIBLE_OPERATORS.length;
                                         // throw new IllegalArgumentException("Cannot mutate UNDEFINED operator type"); 
                                 }
@@ -76,7 +76,7 @@ public class PatchingLab {
                         patience = patienceFunction();
                         if (numStuck > patience) { safelyIncrementTarantula(); }; // IDEA: have numTarantulaScores follow NUM_OPERATORS*sin(0.1x) or something instead.
                         if (numWorse > patience) { safelyDecrementTarantula(); };
-                        // if (numStuck > 3*patience) { safelyIncrementMutations(); };
+                        // if (numStuck > 2*patience) { safelyDecrementMutations(); };
                         // if (numWorse > 3*patience) { safelyDecrementMutations(); };
                         previousResult = iterationResults; // copy?
                         iteration++;
@@ -153,7 +153,7 @@ public class PatchingLab {
                 for (int operatorNumber = 0; operatorNumber < numOperators; operatorNumber++) {
                         int[] results = countLineResults(testResults, testSpectrum.getOrDefault(operatorNumber, new ArrayList<>()));
                         if (results[PASS] == 0 && results[FAIL] == 0) {scores[operatorNumber] = 0.1;} // Some small value, cause' it is a bit suspicious.
-                        else if (totalResults[PASS] == 0) { scores[operatorNumber] = 1; } // this is bad, but its all equally bad.
+                        else if (totalResults[PASS] == 0) { scores[operatorNumber] = 0.05; } // this is bad, but its all equally bad.
                         else if (totalResults[FAIL] == 0) { scores[operatorNumber] = 0; } // don't really care, this case means we won.
                         else {scores[operatorNumber] = ((double) results[FAIL] / totalResults[FAIL] ) / ( ( (double) results[PASS] / totalResults[PASS]) + ( (double) results[FAIL] / totalResults[FAIL]) );}
                 }
@@ -235,13 +235,14 @@ public class PatchingLab {
                 int[] mutationIndices = new int[MutationScheduler.numMutations];
                 double[] sortedtarantulaScores = Arrays.copyOf(tarantulaScores, tarantulaScores.length);
                 Arrays.sort(sortedtarantulaScores);
-                int scoreIdx = Math.min((int)Math.floor(Math.abs(0.25*RNG.nextGaussian()*MutationScheduler.numTarantulaScores)), MutationScheduler.numTarantulaScores);
+                // int scoreIdx = Math.min((int)Math.floor(Math.abs(0.25*RNG.nextGaussian()*MutationScheduler.numTarantulaScores)), MutationScheduler.numTarantulaScores);
                 sortedtarantulaScores = Arrays.copyOfRange(sortedtarantulaScores, sortedtarantulaScores.length-MutationScheduler.numTarantulaScores, sortedtarantulaScores.length);
                 assert(sortedtarantulaScores.length == MutationScheduler.numTarantulaScores);
-                // ArrayUtils.shuffle(sortedtarantulaScores);
+                ArrayUtils.shuffle(sortedtarantulaScores);
+   
                 for (int i = 0; i < mutationIndices.length; i++) {
-                        mutationIndices[i] = indexOf(sortedtarantulaScores[sortedtarantulaScores.length - scoreIdx - 1], tarantulaScores);
-                        // mutationIndices[i] = indexOf(sortedtarantulaScores[sortedtarantulaScores.length - i - 1], tarantulaScores);
+                        // mutationIndices[i] = indexOf(sortedtarantulaScores[sortedtarantulaScores.length - scoreIdx - 1], tarantulaScores);
+                        mutationIndices[i] = indexOf(sortedtarantulaScores[i], tarantulaScores);
                 }
                 return mutationIndices;
         }
@@ -358,18 +359,18 @@ public class PatchingLab {
                 double[] testResults = bestResults();
                 System.out.println("DEBUG: values [bestIdx, bestFitness, bestPassFrac, avgFitness]: " + Arrays.toString(testResults));
 
-                MutationScheduler.update(testResults[1]); // make sure to pass the correct value here
-                System.out.println("DEBUG: MutationScheduler.numTarantulaScores: " + MutationScheduler.numTarantulaScores);
-                System.out.println("DEBUG: MutationScheduler.numMutations: " + MutationScheduler.numMutations);
-                System.out.println("DEBUG: MutationScheduler.numStuck: " + MutationScheduler.numStuck);
-                System.out.println("DEBUG: MutationScheduler.numWorse: " + MutationScheduler.numWorse);
-                System.out.println("DEBUG: MutationScheduler.patience: " + MutationScheduler.patience);
+                // MutationScheduler.update(testResults[1]); // make sure to pass the correct value here
+                // System.out.println("DEBUG: MutationScheduler.numTarantulaScores: " + MutationScheduler.numTarantulaScores);
+                // System.out.println("DEBUG: MutationScheduler.numMutations: " + MutationScheduler.numMutations);
+                // System.out.println("DEBUG: MutationScheduler.numStuck: " + MutationScheduler.numStuck);
+                // System.out.println("DEBUG: MutationScheduler.numWorse: " + MutationScheduler.numWorse);
+                // System.out.println("DEBUG: MutationScheduler.patience: " + MutationScheduler.patience);
 
                 uncoveredOperators = 0;
                 for (typeEnum operatorType : operatorTypes) { // for debugging
                         if (operatorType == typeEnum.UNDEFINED) {uncoveredOperators++;}
                 }
-                System.out.println("DEBUG: uncoveredOperators after test run "+MutationScheduler.iteration+": " + uncoveredOperators);
+                System.out.println("DEBUG: uncoveredOperators: " + uncoveredOperators);
 
                 // 1. store a history of testResults[2]
                 // output something at the end
