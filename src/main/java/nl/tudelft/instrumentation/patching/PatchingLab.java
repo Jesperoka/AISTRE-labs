@@ -11,9 +11,9 @@ public class PatchingLab {
         // Hyperparameters
         private static final int      POPULATION_SIZE = 44; // must be an even number
         private static final double   SURVIVOR_FRACTION = 0.5; // what fraction of population survives selection process
-        private static final float    MUTATION_RATE = 0.2f;
-        private static final int      INITIAL_NUM_TOP_TARANTULA_SCORES = 5;
-        private static final int      INITIAL_NUM_MUTATIONS = 2;
+        private static final float    MUTATION_RATE = 0.3f;
+        private static final int      INITIAL_NUM_TOP_TARANTULA_SCORES = 20;
+        private static final int      INITIAL_NUM_MUTATIONS = 1;
         private static final int      INITAL_PATIENCE = 25;
         // Constants
         private static final String[] POSSIBLE_OPERATORS = {"!=", "==", "<", ">", "<=", ">="};
@@ -63,7 +63,7 @@ public class PatchingLab {
                 static int numTarantulaScores = INITIAL_NUM_TOP_TARANTULA_SCORES;
                 static int numMutations = INITIAL_NUM_MUTATIONS;
                 static int patience = INITAL_PATIENCE;
-                static void safelyIncrementTarantula() { numTarantulaScores = numTarantulaScores < NUM_OPERATORS /2 ? numTarantulaScores + 1 : numTarantulaScores; }
+                static void safelyIncrementTarantula() { numTarantulaScores = numTarantulaScores < NUM_OPERATORS ? numTarantulaScores + 1 : numTarantulaScores; }
                 static void safelyDecrementTarantula() { numTarantulaScores = numTarantulaScores > 1 ? numTarantulaScores - 1 : numTarantulaScores; }
                 // static void safelyIncrementMutations() { numMutations = numMutations < NUM_OPERATORS ? numMutations + 1 : numMutations; }
                 // static void safelyDecrementMutations() { numMutations = numMutations > 1 ? numMutations - 1 : numMutations; }
@@ -136,7 +136,7 @@ public class PatchingLab {
                                 totalResults[FAIL]++;
                         }
                 }
-                return -positiveWeight*totalResults[PASS] - negativeWeight * (totalResults[FAIL] - failedPassing) - 11 * failedPassing;
+                return -positiveWeight*totalResults[PASS] - negativeWeight * (totalResults[FAIL] - failedPassing) - 16 * failedPassing;
                 //return -negativeWeight*totalResults[FAIL];
         }
 
@@ -245,13 +245,13 @@ public class PatchingLab {
                 int[] mutationIndices = new int[MutationScheduler.numMutations];
                 double[] sortedtarantulaScores = Arrays.copyOf(tarantulaScores, tarantulaScores.length);
                 Arrays.sort(sortedtarantulaScores);
-                int scoreIdx = Math.min((int)Math.floor(Math.abs(0.25*RNG.nextGaussian()*MutationScheduler.numTarantulaScores)), MutationScheduler.numTarantulaScores);
+                // int scoreIdx = Math.min((int)Math.floor(Math.abs(0.25*RNG.nextGaussian()*MutationScheduler.numTarantulaScores)), MutationScheduler.numTarantulaScores);
                 sortedtarantulaScores = Arrays.copyOfRange(sortedtarantulaScores, sortedtarantulaScores.length-MutationScheduler.numTarantulaScores, sortedtarantulaScores.length);
                 assert(sortedtarantulaScores.length == MutationScheduler.numTarantulaScores);
-                // ArrayUtils.shuffle(sortedtarantulaScores);
+                ArrayUtils.shuffle(sortedtarantulaScores);
                 for (int i = 0; i < mutationIndices.length; i++) {
-                        mutationIndices[i] = indexOf(sortedtarantulaScores[sortedtarantulaScores.length - scoreIdx - 1], tarantulaScores);
-                        // mutationIndices[i] = indexOf(sortedtarantulaScores[sortedtarantulaScores.length - i - 1], tarantulaScores);
+                        // mutationIndices[i] = indexOf(sortedtarantulaScores[sortedtarantulaScores.length - scoreIdx - 1], tarantulaScores);
+                        mutationIndices[i] = indexOf(sortedtarantulaScores[sortedtarantulaScores.length - i - 1], tarantulaScores);
                 }
                 return mutationIndices;
         }
@@ -387,7 +387,9 @@ public class PatchingLab {
                 double[] testResults = bestResults();
                 System.out.println("DEBUG: values [bestIdx, bestFitness, bestPassFrac, avgFitness]: " + Arrays.toString(testResults));
 
-                MutationScheduler.update(testResults[1]); // make sure to pass the correct value here
+                MutationScheduler.iteration++;
+
+                //MutationScheduler.update(testResults[1]); // make sure to pass the correct value here
                 // System.out.println("DEBUG: MutationScheduler.numTarantulaScores: " + MutationScheduler.numTarantulaScores);
                 // System.out.println("DEBUG: MutationScheduler.numMutations: " + MutationScheduler.numMutations);
                 // System.out.println("DEBUG: MutationScheduler.numStuck: " + MutationScheduler.numStuck);
