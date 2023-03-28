@@ -9,9 +9,9 @@ import org.apache.commons.lang3.ArrayUtils;
 public class PatchingLab {
 
         // Hyperparameters
-        private static final int      POPULATION_SIZE = 20; // must be an even number
+        private static final int      POPULATION_SIZE = 44; // must be an even number
         private static final double   SURVIVOR_FRACTION = 0.5; // what fraction of population survives selection process
-        private static final float    MUTATION_RATE = 0.5f;
+        private static final float    MUTATION_RATE = 0.2f;
         private static final int      INITIAL_NUM_TOP_TARANTULA_SCORES = 5; 
         private static final int      INITIAL_NUM_MUTATIONS = 2;
         private static final int      INITAL_PATIENCE = 25;
@@ -123,8 +123,8 @@ public class PatchingLab {
                 }
                 // divide by the maximal total value to get a number <= 1;
                 // return (positiveWeight*totalResults[PASS] - negativeWeight*totalResults[FAIL]) / (positiveWeight * testResults.size());
-                // return positiveWeight*totalResults[PASS] - negativeWeight*totalResults[FAIL];
-                return -negativeWeight*totalResults[FAIL];
+                return positiveWeight*totalResults[PASS] - negativeWeight*totalResults[FAIL];
+                // return -negativeWeight*totalResults[FAIL];
         }
 
         private static int[] countTotalResults(List<Boolean> testResults) {
@@ -149,8 +149,9 @@ public class PatchingLab {
                 int[] totalResults = countTotalResults(testResults);
                 for (int operatorNumber = 0; operatorNumber < numOperators; operatorNumber++) {
                         int[] results = countLineResults(testResults, testSpectrum.getOrDefault(operatorNumber, new ArrayList<>()));
-                        if (results[PASS] == 0 && results[FAIL] == 0) {scores[operatorNumber] = 0;} // TODO: think, should this be like 0.1? because we want to eventually try these as well if we are stuck
-                        // else if (totalResults[PASS] == 0 || totalResults[FAIL] == 0) {}
+                        if (results[PASS] == 0 && results[FAIL] == 0) {scores[operatorNumber] = 0.1;} // Some small value, cause' it is a bit suspicious.
+                        else if (totalResults[PASS] == 0) { scores[operatorNumber] = 1; } // this is bad, but its all equally bad.
+                        else if (totalResults[FAIL] == 0) { scores[operatorNumber] = 0; } // don't really care, this case means we won.
                         else {scores[operatorNumber] = ((double) results[FAIL] / totalResults[FAIL] ) / ( ( (double) results[PASS] / totalResults[PASS]) + ( (double) results[FAIL] / totalResults[FAIL]) );}
                 }
                 return scores;
@@ -227,6 +228,7 @@ public class PatchingLab {
                 Arrays.sort(sortedtarantulaScores);
                 int scoreIdx = Math.min((int)Math.floor(Math.abs(0.25*RNG.nextGaussian()*MutationScheduler.numTarantulaScores)), MutationScheduler.numTarantulaScores);
                 sortedtarantulaScores = Arrays.copyOfRange(sortedtarantulaScores, sortedtarantulaScores.length-MutationScheduler.numTarantulaScores, sortedtarantulaScores.length);
+                assert(sortedtarantulaScores.length == MutationScheduler.numTarantulaScores);
                 // ArrayUtils.shuffle(sortedtarantulaScores);
                 for (int i = 0; i < mutationIndices.length; i++) {
                         mutationIndices[i] = indexOf(sortedtarantulaScores[sortedtarantulaScores.length - scoreIdx - 1], tarantulaScores);
