@@ -9,10 +9,10 @@ import org.apache.commons.lang3.ArrayUtils;
 public class PatchingLab {
 
         // Hyperparameters
-        private static final int      POPULATION_SIZE = 50; // must be an even number
+        private static final int      POPULATION_SIZE = 20; // must be an even number
         private static final double   SURVIVOR_FRACTION = 0.5; // what fraction of population survives selection process
-        private static final float    MUTATION_RATE = 0.2f;
-        private static final int      INITIAL_NUM_TOP_TARANTULA_SCORES = 2; 
+        private static final float    MUTATION_RATE = 0.5f;
+        private static final int      INITIAL_NUM_TOP_TARANTULA_SCORES = 5; 
         private static final int      INITIAL_NUM_MUTATIONS = 2;
         private static final int      INITAL_PATIENCE = 25;
         // Constants
@@ -38,7 +38,7 @@ public class PatchingLab {
                                 if (operatorTypes[idx] == typeEnum.INT) {length = POSSIBLE_OPERATORS.length;}
                                 else if (operatorTypes[idx] == typeEnum.BOOL) {length = 2;} 
                                 else { throw new IllegalArgumentException("Cannot mutate UNDEFINED operator type"); }
-                                operators[idx] = POSSIBLE_OPERATORS[RNG.nextInt(length)];
+                                operators[idx] = POSSIBLE_OPERATORS[RNG.nextInt(length)];       
                         }
                 }
 
@@ -150,6 +150,7 @@ public class PatchingLab {
                 for (int operatorNumber = 0; operatorNumber < numOperators; operatorNumber++) {
                         int[] results = countLineResults(testResults, testSpectrum.getOrDefault(operatorNumber, new ArrayList<>()));
                         if (results[PASS] == 0 && results[FAIL] == 0) {scores[operatorNumber] = 0;} // TODO: think, should this be like 0.1? because we want to eventually try these as well if we are stuck
+                        // else if (totalResults[PASS] == 0 || totalResults[FAIL] == 0) {}
                         else {scores[operatorNumber] = ((double) results[FAIL] / totalResults[FAIL] ) / ( ( (double) results[PASS] / totalResults[PASS]) + ( (double) results[FAIL] / totalResults[FAIL]) );}
                 }
                 return scores;
