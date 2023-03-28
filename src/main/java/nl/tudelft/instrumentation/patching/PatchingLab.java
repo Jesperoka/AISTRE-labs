@@ -188,7 +188,7 @@ public class PatchingLab {
                 ancestor.testResults = runTests(ancestor.operators);
                 ancestor.tarantulaScores = computeTarantulaScores(ancestor.testResults, NUM_OPERATORS, currentTestSpectrum);
 
-                for (typeEnum operatorType : operatorTypes) {
+                for (typeEnum operatorType : operatorTypes) { // for debugging
                         if (operatorType == typeEnum.UNDEFINED) {uncoveredOperators++;}
                 }
                 System.out.println("DEBUG: uncoveredOperators after first test run: " + uncoveredOperators);
@@ -364,7 +364,12 @@ public class PatchingLab {
                 System.out.println("DEBUG: MutationScheduler.numStuck: " + MutationScheduler.numStuck);
                 System.out.println("DEBUG: MutationScheduler.numWorse: " + MutationScheduler.numWorse);
                 System.out.println("DEBUG: MutationScheduler.patience: " + MutationScheduler.patience);
-                System.out.println("DEBUG: uncoveredOperators: " + uncoveredOperators);
+
+                uncoveredOperators = 0;
+                for (typeEnum operatorType : operatorTypes) { // for debugging
+                        if (operatorType == typeEnum.UNDEFINED) {uncoveredOperators++;}
+                }
+                System.out.println("DEBUG: uncoveredOperators after test run "+MutationScheduler.iteration+": " + uncoveredOperators);
 
                 // 1. store a history of testResults[2]
                 // output something at the end
