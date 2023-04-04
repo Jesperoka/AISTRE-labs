@@ -1,11 +1,6 @@
 package nl.tudelft.instrumentation.learning;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.Map.Entry;
 
 /**
@@ -53,7 +48,39 @@ public class ObservationTable implements DistinguishingSequenceGenerator, Access
      *         with something usefull to extend the observation table with.
      */
     public Optional<Word<String>> checkForClosed() {
-        // TODO implement the check for closedness of the observation table.
+        // TODO check if we should add an entree that lead to the invalid state or not.
+        System.out.println("TEST CLOSED CHECK");
+        Set<String> sStates = new HashSet<>();
+        // You want to have the shortest inputs that lead to new states.
+        Word<String> toAdd = new Word<String>();
+
+        for(Word<String> s : S) {
+            List<String> row = table.get(s);
+            sStates.addAll(row);
+        }
+        // TEST PRINT
+        System.out.println(sStates);
+        for(Map.Entry<Word<String>, ArrayList<String>> entry : table.entrySet()) {
+            if (S.contains(entry.getKey())) {
+                // the entry is in S so all it is not important to check.
+                continue;
+            }
+            for (String eValue : entry.getValue()) {
+                if (!sStates.contains(eValue)) {
+                    if(entry.getKey().size() == 1) {
+                        System.out.println("Found: " + entry.getKey() + " With " + eValue);
+                        return Optional.of(entry.getKey());
+                    }
+                    if(toAdd.size() == 0 || entry.getKey().size() < toAdd.size()) {
+                        toAdd = entry.getKey();
+                    }
+                }
+            }
+        }
+        if(toAdd.size() > 0) {
+            System.out.println("Found: " + toAdd);
+            return Optional.of(toAdd);
+        }
         return Optional.empty();
     }
 

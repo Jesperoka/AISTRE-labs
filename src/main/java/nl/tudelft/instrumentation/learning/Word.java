@@ -56,4 +56,9 @@ public class Word<T> {
     public String toString() {
         return String.join(",", word.stream().map(x -> x.toString()).collect(Collectors.toList()));
     }
+
+    // NEWLY ADDED JUST TO GET THE SIZE OF THE WORD
+    public int size() {
+        return word.size();
+    }
 }
