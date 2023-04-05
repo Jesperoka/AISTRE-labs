@@ -35,7 +35,11 @@ public class LearningLab {
      * if not then make it consistent.
      */
     private static void makeConsistent() {
-        // TODO
+        Optional<Word<String>> newSuffix = observationTable.checkForConsistent();
+        while (newSuffix.isPresent()) {
+            observationTable.addToE(newSuffix.get());
+            newSuffix = observationTable.checkForConsistent();
+        }
     }
 
     /**
@@ -52,6 +56,13 @@ public class LearningLab {
             return;
         }
         System.out.println("Counter Example: " + res.get());
+        List<String> counterExample = res.get().asList();
+
+        for(int i = 1; i <= counterExample.size(); i++) {
+            // Add all prefixes of the counterExample to S.
+            //System.out.println(counterExample.subList(0, i));
+            observationTable.addToS(new Word<>(counterExample.subList(0, i)));
+        }
 
         // might need another method in ObservationTable as it seems you might need to access S.
 
@@ -75,6 +86,7 @@ public class LearningLab {
         observationTable = new ObservationTable(LearningTracker.inputSymbols, sul);
         equivalenceChecker = new RandomWalkEquivalenceChecker(sul, LearningTracker.inputSymbols, 100, 1000);
         hypothesis = observationTable.generateHypothesis();
+        observationTable.print();
         // TODO implement the WMethod and then switch to it.
         // equivalenceChecker = new WMethodEquivalenceChecker(sul, LearningTracker.inputSymbols, 1, observationTable, observationTable);
 
@@ -82,16 +94,17 @@ public class LearningLab {
         // Implement the checks for consistent and closed in the observation table.
         // Use the observation table and the equivalence checker to implement the L* learning algorithm.
         while (!isFinished) {
-            observationTable.print();
+            makeConsistent();
 
             makeComplete();
 
-            makeConsistent();
+            verify();
 
+            // Print the table
+            observationTable.print();
             // Update the hypothesis.
             hypothesis = observationTable.generateHypothesis();
-
-            verify();
+            hypothesis.writeToDot("hypothesis.dot");
         }
     }
 

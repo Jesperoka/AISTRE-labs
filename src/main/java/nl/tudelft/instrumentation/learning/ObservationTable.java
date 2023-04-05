@@ -86,7 +86,28 @@ public class ObservationTable implements DistinguishingSequenceGenerator, Access
      *         with something useful to extend the observation table with.
      */
     public Optional<Word<String>> checkForConsistent() {
-        // TODO implement the consistency check.
+        System.out.println("Checking consistency!");
+        for(int i = 0; i < S.size(); i++) {
+            for(int j = i + 1; j < S.size(); j++) {
+                Word<String> A = S.get(i);
+                Word<String> B = S.get(j);
+                System.out.println(A + " | " + B);
+                if(table.get(A).equals(table.get(B))) {
+                    System.out.println("Two Are equal!");
+                    for(String k : inputSymbols) {
+                        for (Word<String> e : E) {
+                            Word<String> test = new Word<String>().append(k).append(e);
+                            Word<String> aTest = new Word<String>().append(A).append(test);
+                            Word<String> bTest = new Word<String>().append(B).append(test);
+                            if (!sul.getLastOutput(aTest).equals(sul.getLastOutput(bTest))) {
+                                System.out.println(test + " distinguishes");
+                                return Optional.of(test);
+                            }
+                        }
+                    }
+                }
+            }
+        }
         return Optional.empty();
     }
 
