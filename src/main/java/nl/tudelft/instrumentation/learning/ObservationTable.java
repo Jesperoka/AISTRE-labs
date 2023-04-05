@@ -48,32 +48,25 @@ public class ObservationTable implements DistinguishingSequenceGenerator, Access
      *         with something usefull to extend the observation table with.
      */
     public Optional<Word<String>> checkForClosed() {
-        // TODO check if we should add an entree that lead to the invalid state or not.
-        System.out.println("TEST CLOSED CHECK");
-        Set<String> sStates = new HashSet<>();
+        // TODO check if we should ignore invalid states or not.
+        Set<List<String>> sStates = new HashSet<>();
         // You want to have the shortest inputs that lead to new states.
         Word<String> toAdd = new Word<String>();
 
         for(Word<String> s : S) {
             List<String> row = table.get(s);
-            sStates.addAll(row);
+            sStates.add(row);
         }
-        // TEST PRINT
-        System.out.println(sStates);
         for(Map.Entry<Word<String>, ArrayList<String>> entry : table.entrySet()) {
             if (S.contains(entry.getKey())) {
-                // the entry is in S so all it is not important to check.
                 continue;
             }
-            for (String eValue : entry.getValue()) {
-                if (!sStates.contains(eValue)) {
-                    if(entry.getKey().size() == 1) {
-                        System.out.println("Found: " + entry.getKey() + " With " + eValue);
-                        return Optional.of(entry.getKey());
-                    }
-                    if(toAdd.size() == 0 || entry.getKey().size() < toAdd.size()) {
-                        toAdd = entry.getKey();
-                    }
+            if(!sStates.contains(entry.getValue())) {
+                if(entry.getKey().size() == 1) {
+                    return Optional.of(entry.getKey());
+                }
+                if(toAdd.size() == 0 || toAdd.size() > entry.getKey().size()) {
+                    toAdd = entry.getKey();
                 }
             }
         }
@@ -90,7 +83,7 @@ public class ObservationTable implements DistinguishingSequenceGenerator, Access
      * You should write your own logic here.
      *
      * @return an Optional.empty() if the table is consistent, or an Optional.of(_)
-     *         with something usefull to extend the observation table with.
+     *         with something useful to extend the observation table with.
      */
     public Optional<Word<String>> checkForConsistent() {
         // TODO implement the consistency check.
@@ -100,6 +93,7 @@ public class ObservationTable implements DistinguishingSequenceGenerator, Access
     private String getResultFromSul(Word<String> trace) {
         String res = sul.getLastOutput(trace);
         // System.out.printf("Output for trace %s is %s\n", trace, res);
+        // TODO? check number of membership queries here
         return res;
     }
 
