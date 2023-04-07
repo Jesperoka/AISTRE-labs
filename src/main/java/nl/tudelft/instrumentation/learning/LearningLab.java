@@ -66,25 +66,14 @@ public class LearningLab {
 
         // might need another method in ObservationTable as it seems you might need to access S.
 
-        /* initial wrong attempt
-        List<String> counterExample = res.get().asList();
-        System.out.println(counterExample);
-        for(int i = 0; i <= counterExample.size(); i++) {
-            Word<String> test = new Word<>(counterExample.subList(i, counterExample.size()));
-            System.out.println(test);
-            if(!hypothesis.getLastOutput(test).equals(sul.getLastOutput(test))) {
-                System.out.println("Outputs not the same for: " + test);
-                observationTable.addToE(test);
-                return;
-            }
-        }
-        System.out.println("was a counterExample but could not find z?");*/
+        System.out.println("was a counterExample but could not find z?");
     }
 
     static void run() {
         // Base variables.
         observationTable = new ObservationTable(LearningTracker.inputSymbols, sul);
-        equivalenceChecker = new RandomWalkEquivalenceChecker(sul, LearningTracker.inputSymbols, 100, 1000);
+        // equivalenceChecker = new RandomWalkEquivalenceChecker(sul, LearningTracker.inputSymbols, 100, 1000);
+        equivalenceChecker = new WMethodEquivalenceChecker(sul, LearningTracker.inputSymbols, 100, observationTable, observationTable);
         hypothesis = observationTable.generateHypothesis();
         observationTable.print();
         // TODO implement the WMethod and then switch to it.
