@@ -3,12 +3,15 @@ package nl.tudelft.instrumentation.learning;
 import java.util.Optional;
 import java.util.List;
 import java.util.ArrayList;
+// import nl.tudelft.instrumentation.learning.LearningLab.membershipQueries;
 
 public class WMethodEquivalenceChecker extends EquivalenceChecker{
 
     private int w;
     private AccessSequenceGenerator accessSequenceGenerator;
     private DistinguishingSequenceGenerator distinguishingSequenceGenerator;
+    private List<Word<String>> accessSequences;
+    private List<Word<String>> distinguishingSequences;
 
     public WMethodEquivalenceChecker(SystemUnderLearn sul, String[] inputSymbols, int w, DistinguishingSequenceGenerator dg, AccessSequenceGenerator ag) {
         super(sul, inputSymbols);
@@ -19,8 +22,14 @@ public class WMethodEquivalenceChecker extends EquivalenceChecker{
 
     @Override
     public Optional<Word<String>> verify(MealyMachine hypothesis) {
-        List<Word<String>> accessSequences = accessSequenceGenerator.getAccessSequences();
-        List<Word<String>> distinguishingSequences = distinguishingSequenceGenerator.getDistinguishingSequences();
+        if (accessSequences == null) {
+            accessSequences = accessSequenceGenerator.getAccessSequences();
+        }
+        if (distinguishingSequences == null) {
+            distinguishingSequences = distinguishingSequenceGenerator.getDistinguishingSequences();
+        }
+        // List<Word<String>> accessSequences = accessSequenceGenerator.getAccessSequences();
+        // List<Word<String>> distinguishingSequences = distinguishingSequenceGenerator.getDistinguishingSequences();
 
         // Check all combinations of access sequences, words of length w, and distinguishing sequences
         for (Word<String> accessSequence : accessSequences) {
@@ -34,6 +43,7 @@ public class WMethodEquivalenceChecker extends EquivalenceChecker{
                     Word<String> systemUnderLearnOutput = new Word<>(sul.getOutput(inputWord));
 
                     // If outputs don't match, return counterexample
+                    LearningLab.membershipQueries++;
                     if (!hypothesisOutput.equals(systemUnderLearnOutput)) {
                         return Optional.of(inputWord);
                     }
@@ -48,8 +58,7 @@ public class WMethodEquivalenceChecker extends EquivalenceChecker{
     private List<Word<String>> wordsOverAlphabet(String[] alphabet, int w) {
         List<Word<String>> words = new ArrayList<>();
         if (w == 0) {
-            // words.add(new Word<String>(Collections.emptyList()));
-            return words;
+            words.add(new Word<String>(new String[] {})); // empty word (epsilon)
         } else {
             List<Word<String>> suffixes = wordsOverAlphabet(alphabet, w - 1);
             for (String symbol : alphabet) {

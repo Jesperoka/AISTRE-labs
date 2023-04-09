@@ -8,9 +8,13 @@ import java.util.*;
  * You should write your own solution using this class.
  */
 public class LearningLab {
-    static Random r = new Random();
-    static int traceLength = 10;
-    static boolean isFinished = false;
+    public static final boolean DEBUG = false;
+    
+    private static Random r = new Random();
+    private static int traceLength = 10;
+    private static boolean isFinished = false;
+    private static long startTime = 0;
+    public static int membershipQueries = 0;
 
     static ObservationTable observationTable;
     static EquivalenceChecker equivalenceChecker;
@@ -52,31 +56,32 @@ public class LearningLab {
         Optional<Word<String>> res = equivalenceChecker.verify(hypothesis);
         if(!res.isPresent()) {
             isFinished = true;
-            System.out.println("DONE FOR REALSIES");
+            observationTable.print();
+            displayPerformanceStatistics();
             return;
         }
-        System.out.println("Counter Example: " + res.get());
+        // System.out.println("Counter Example: " + res.get());
         List<String> counterExample = res.get().asList();
 
         for(int i = 1; i <= counterExample.size(); i++) {
             // Add all prefixes of the counterExample to S.
-            //System.out.println(counterExample.subList(0, i));
+            if (DEBUG) System.out.println(counterExample.subList(0, i));
             observationTable.addToS(new Word<>(counterExample.subList(0, i)));
         }
 
         // might need another method in ObservationTable as it seems you might need to access S.
 
-        System.out.println("was a counterExample but could not find z?");
+        if (DEBUG) System.out.println("was a counterExample but could not find z?");
     }
 
     static void run() {
+        startTime = System.currentTimeMillis();
         // Base variables.
         observationTable = new ObservationTable(LearningTracker.inputSymbols, sul);
         // equivalenceChecker = new RandomWalkEquivalenceChecker(sul, LearningTracker.inputSymbols, 100, 1000);
-        equivalenceChecker = new WMethodEquivalenceChecker(sul, LearningTracker.inputSymbols, 100, observationTable, observationTable);
+        equivalenceChecker = new WMethodEquivalenceChecker(sul, LearningTracker.inputSymbols, 3, observationTable, observationTable);
         hypothesis = observationTable.generateHypothesis();
         observationTable.print();
-        // TODO implement the WMethod and then switch to it.
         // equivalenceChecker = new WMethodEquivalenceChecker(sul, LearningTracker.inputSymbols, 1, observationTable, observationTable);
 
         // Place here your code to learn a model of the RERS problem.
@@ -89,14 +94,18 @@ public class LearningLab {
 
             verify();
 
-            // Print the table
-            observationTable.print();
             // Update the hypothesis.
             hypothesis = observationTable.generateHypothesis();
             hypothesis.writeToDot("hypothesis.dot");
         }
     }
 
+    public static void displayPerformanceStatistics(){
+        long runTime = System.currentTimeMillis() - startTime;
+        System.out.println("Number of States: " + hypothesis.getStates().length);
+        System.out.println("Runtime (ms): " + runTime);
+        System.out.println("Membership Queries: " + membershipQueries);
+    }
 
     /**
      * Method that is used for catching the output from standard out.
