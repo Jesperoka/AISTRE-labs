@@ -12,6 +12,7 @@ public class WMethodEquivalenceChecker extends EquivalenceChecker{
     private DistinguishingSequenceGenerator distinguishingSequenceGenerator;
     private List<Word<String>> accessSequences;
     private List<Word<String>> distinguishingSequences;
+    private List<Word<String>> wordsOfLengthW;
 
     public WMethodEquivalenceChecker(SystemUnderLearn sul, String[] inputSymbols, int w, DistinguishingSequenceGenerator dg, AccessSequenceGenerator ag) {
         super(sul, inputSymbols);
@@ -22,18 +23,13 @@ public class WMethodEquivalenceChecker extends EquivalenceChecker{
 
     @Override
     public Optional<Word<String>> verify(MealyMachine hypothesis) {
-        if (accessSequences == null) {
-            accessSequences = accessSequenceGenerator.getAccessSequences();
-        }
-        if (distinguishingSequences == null) {
-            distinguishingSequences = distinguishingSequenceGenerator.getDistinguishingSequences();
-        }
-        // List<Word<String>> accessSequences = accessSequenceGenerator.getAccessSequences();
-        // List<Word<String>> distinguishingSequences = distinguishingSequenceGenerator.getDistinguishingSequences();
+        if (accessSequences         == null) { accessSequences         = accessSequenceGenerator.getAccessSequences(); }
+        if (distinguishingSequences == null) { distinguishingSequences = distinguishingSequenceGenerator.getDistinguishingSequences(); }
+        if (wordsOfLengthW          == null) { wordsOfLengthW          = wordsOverAlphabet(inputSymbols, w); }
 
         // Check all combinations of access sequences, words of length w, and distinguishing sequences
         for (Word<String> accessSequence : accessSequences) {
-            for (Word<String> word : wordsOverAlphabet(inputSymbols, w)) {
+            for (Word<String> word : wordsOfLengthW) {
                 for (Word<String> distinguishingSequence : distinguishingSequences) {
                     // Construct input word from access sequence, word, and distinguishing sequence
                     Word<String> inputWord = accessSequence.append(word).append(distinguishingSequence);
