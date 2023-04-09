@@ -23,9 +23,10 @@ public class WMethodEquivalenceChecker extends EquivalenceChecker{
 
     @Override
     public Optional<Word<String>> verify(MealyMachine hypothesis) {
-        if (accessSequences         == null) { accessSequences         = accessSequenceGenerator.getAccessSequences(); }
-        if (distinguishingSequences == null) { distinguishingSequences = distinguishingSequenceGenerator.getDistinguishingSequences(); }
-        if (wordsOfLengthW          == null) { wordsOfLengthW          = wordsOverAlphabet(inputSymbols, w); }
+        if (wordsOfLengthW == null) wordsOfLengthW = wordsOverAlphabet(inputSymbols, w);
+
+        accessSequences = accessSequenceGenerator.getAccessSequences();
+        distinguishingSequences = distinguishingSequenceGenerator.getDistinguishingSequences();
 
         // Check all combinations of access sequences, words of length w, and distinguishing sequences
         for (Word<String> accessSequence : accessSequences) {
@@ -35,13 +36,20 @@ public class WMethodEquivalenceChecker extends EquivalenceChecker{
                     Word<String> inputWord = accessSequence.append(word).append(distinguishingSequence);
 
                     // Get outputs from hypothesis and system under learning
-                    Word<String> hypothesisOutput = new Word<>(hypothesis.getOutput(inputWord));
-                    Word<String> systemUnderLearnOutput = new Word<>(sul.getOutput(inputWord));
+                    // Word<String> hypothesisOutput = new Word<>(hypothesis.getOutput(inputWord));
+                    // Word<String> systemUnderLearnOutput = new Word<>(sul.getOutput(inputWord));
+                    String[] hypothesisOutput = hypothesis.getOutput(inputWord);
+                    String[] systemUnderLearnOutput = sul.getOutput(inputWord);
+
+                    // if (!hypothesisOutput.equals(systemUnderLearnOutput)) { // <<<<<------ this also worked, but we ended up with way more membership queries
+                    //     return Optional.of(inputWord);
+                    // }
 
                     // If outputs don't match, return counterexample
-                    LearningLab.membershipQueries++;
-                    if (!hypothesisOutput.equals(systemUnderLearnOutput)) {
-                        return Optional.of(inputWord);
+                    for (int j = 0; j < hypothesisOutput.length; j++) {
+                        if (!hypothesisOutput[j].equals(systemUnderLearnOutput[j])) {
+                            return Optional.of(new Word<String>(inputWord.asList().subList(0, j + 1)));
+                        }
                     }
                 }
             }
@@ -50,11 +58,11 @@ public class WMethodEquivalenceChecker extends EquivalenceChecker{
         return Optional.empty();
     }
 
-    // Helper method to generate all words of length w over an alphabet
+    // Helper method to generate all words of length w over an alphabet (WE'VE GOTTEN CORRECT RESULTS WITH THIS ONE)
     private List<Word<String>> wordsOverAlphabet(String[] alphabet, int w) {
         List<Word<String>> words = new ArrayList<>();
         if (w == 0) {
-            words.add(new Word<String>(new String[] {})); // empty word (epsilon)
+            words.add(new Word<String>(new String[] {}));
         } else {
             List<Word<String>> suffixes = wordsOverAlphabet(alphabet, w - 1);
             for (String symbol : alphabet) {
@@ -66,4 +74,18 @@ public class WMethodEquivalenceChecker extends EquivalenceChecker{
         return words;
     }
 
+    // Helper method to generate all words of length <= w over an alphabet (THIS IS THEORETICALLTY THE CORRECT ONE)
+    private static List<Word<String>> wordsOverAlphabet2(String[] alphabet, int w) {
+        List<Word<String>> words = new ArrayList<>();
+        for (int i = 1; i <= w; i++) {
+            List<Word<String>> newWords = new ArrayList<>();
+            for (Word<String> word : words) {
+                for (String symbol : alphabet) {
+                    newWords.add(word.append(symbol));
+                }
+            }
+            words.addAll(newWords);
+        }
+        return words;
+    }
 }
