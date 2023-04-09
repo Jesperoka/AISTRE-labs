@@ -73,6 +73,7 @@ public class LearningTracker {
      * @param sequence the fuzzed sequence that needs top be run.
      */
     public static String[] runNextTrace(String[] sequence) {
+        LearningLab.membershipQueries++; // <<-------- membership queries
         reset();
         problem.setSequence(sequence);
         currentInput = sequence;
