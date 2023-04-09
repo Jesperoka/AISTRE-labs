@@ -114,8 +114,6 @@ public class ObservationTable implements DistinguishingSequenceGenerator, Access
 
     private String getResultFromSul(Word<String> trace) {
         String res = sul.getLastOutput(trace);
-        // System.out.printf("Output for trace %s is %s\n", trace, res);
-        // TODO? check number of membership queries here
         return res;
     }
 
