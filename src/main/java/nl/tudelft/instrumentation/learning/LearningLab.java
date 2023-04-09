@@ -62,13 +62,11 @@ public class LearningLab {
         if (DEBUG) System.out.println("Counter Example: " + res.get());
         List<String> counterExample = res.get().asList();
 
-        for(int i = 1; i <= counterExample.size(); i++) {
+        for(int i = 0; i < counterExample.size(); i++) {
             // Add all prefixes of the counterExample to S.
             if (DEBUG) System.out.println(counterExample.subList(0, i));
             observationTable.addToS(new Word<>(counterExample.subList(0, i)));
         }
-        // might need another method in ObservationTable as it seems you might need to access S.
-        if (DEBUG) System.out.println("was a counterExample but could not find z?");
     }
 
     static void run() {
@@ -80,7 +78,6 @@ public class LearningLab {
 
         hypothesis = observationTable.generateHypothesis();
         if(PRINT_OBS_TABLE) observationTable.print();
-
         displayStartInfoMessage();
         while (!isFinished) {
             makeConsistent();
@@ -104,7 +101,7 @@ public class LearningLab {
     }
 
     public static void displayStartInfoMessage() {
-        System.out.println("\n\nRunning L-star learning.\n\nExpected runtimes with DEPTH = 3 (actual DEPTH: "+DEPTH+"):\n-----------------------\nProblem 1: < 40 000 ms\nProblem 2: < 40 000 ms\nProblem 4: < 200 000 ms\nProblem 7: < 400 000 ms\n-----------------------\n\n . . . R u n n i n g (DEBUG = "+DEBUG+") . . .");
+        System.out.println("\n\nRunning L-star learning.\n\nExpected runtimes with DEPTH = 3 (actual DEPTH: "+DEPTH+"):\n-----------------------\nProblem 1: < 40 000 ms\nProblem 2: < 80 000 ms\nProblem 4: < 80 000 ms\nProblem 7: < 500 000 ms\n-----------------------\n\n . . . R u n n i n g (DEBUG = "+DEBUG+") . . .");
     }
 
     /**
