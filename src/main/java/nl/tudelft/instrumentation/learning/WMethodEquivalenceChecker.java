@@ -3,7 +3,6 @@ package nl.tudelft.instrumentation.learning;
 import java.util.Optional;
 import java.util.List;
 import java.util.ArrayList;
-// import nl.tudelft.instrumentation.learning.LearningLab.membershipQueries;
 
 public class WMethodEquivalenceChecker extends EquivalenceChecker{
 
@@ -36,14 +35,8 @@ public class WMethodEquivalenceChecker extends EquivalenceChecker{
                     Word<String> inputWord = accessSequence.append(word).append(distinguishingSequence);
 
                     // Get outputs from hypothesis and system under learning
-                    // Word<String> hypothesisOutput = new Word<>(hypothesis.getOutput(inputWord));
-                    // Word<String> systemUnderLearnOutput = new Word<>(sul.getOutput(inputWord));
                     String[] hypothesisOutput = hypothesis.getOutput(inputWord);
                     String[] systemUnderLearnOutput = sul.getOutput(inputWord);
-
-                    // if (!hypothesisOutput.equals(systemUnderLearnOutput)) { // <<<<<------ this also worked, but we ended up with way more membership queries
-                    //     return Optional.of(inputWord);
-                    // }
 
                     // If outputs don't match, return counterexample
                     for (int j = 0; j < hypothesisOutput.length; j++) {
@@ -74,9 +67,10 @@ public class WMethodEquivalenceChecker extends EquivalenceChecker{
         return words;
     }
 
-    // Helper method to generate all words of length <= w over an alphabet (THIS IS THEORETICALLTY THE CORRECT ONE)
+    // Helper method to generate all words of length <= w over an alphabet (THIS IS THEORETICALLTY THE CORRECT ONE ACCORDING TO SLIDES, BUT THE WAY COUNTEREXAMPLES WORK MEANS THE ABOVE JUST WORKS)
     private static List<Word<String>> wordsOverAlphabet2(String[] alphabet, int w) {
         List<Word<String>> words = new ArrayList<>();
+        words.add(new Word<String>(new String[] {})); // add empty word to allow for appending
         for (int i = 1; i <= w; i++) {
             List<Word<String>> newWords = new ArrayList<>();
             for (Word<String> word : words) {
@@ -86,6 +80,7 @@ public class WMethodEquivalenceChecker extends EquivalenceChecker{
             }
             words.addAll(newWords);
         }
+        words.remove((int) 0); // remove empty word, since its covered by access sequence
         return words;
     }
 }
