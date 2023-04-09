@@ -4,6 +4,11 @@ import org.checkerframework.checker.nullness.Opt;
 
 import java.util.*;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.List;
+
 /**
  * You should write your own solution using this class.
  */
@@ -13,13 +18,14 @@ public class LearningLab {
     private static final int DEPTH = 3;
 
     private static boolean isFinished = false;
-    public static int membershipQueries = 0;
-
     private static long startTime = 0;
+    private static List<float[]> timeStateList = new ArrayList<>();
+
     static ObservationTable observationTable;
     static EquivalenceChecker equivalenceChecker;
     static MealyMachine hypothesis;
     static SystemUnderLearn sul = new RersSUL();
+    public static int membershipQueries = 0;
 
     /**
      * In a loop.
@@ -87,7 +93,9 @@ public class LearningLab {
             // Update the hypothesis.
             hypothesis = observationTable.generateHypothesis();
             hypothesis.writeToDot("hypothesis.dot");
+            timeStateList.add(new float[] {System.currentTimeMillis() - startTime, hypothesis.getStates().length});
         }
+        writeToTxt(timeStateList);
     }
 
     /**
@@ -101,7 +109,44 @@ public class LearningLab {
     }
 
     public static void displayStartInfoMessage() {
-        System.out.println("\n\nRunning L-star learning.\n\nExpected runtimes with DEPTH = 3 (actual DEPTH: "+DEPTH+"):\n-----------------------\nProblem 1: < 40 000 ms\nProblem 2: < 80 000 ms\nProblem 4: < 80 000 ms\nProblem 7: < 500 000 ms\n-----------------------\n\n . . . R u n n i n g (DEBUG = "+DEBUG+") . . .");
+        System.out.println("\n\nRunning L-star learning.\n\nExpected runtimes with DEPTH = 3 (actual DEPTH: "+DEPTH+"):\n-------------------------------------------------------\nProblem 1: [15 000, 60 000] ms\nProblem 2: [60 000, 160 000] ms\nProblem 4: [80 000, 270 000] ms\nProblem 7: [420 000, 1 530 000] ms\n-------------------------------------------------------\n\n . . . R u n n i n g (DEBUG = "+DEBUG+") . . .");
+    }
+
+    // 
+    public static void writeToTxt(List<float[]> listOfFloatArrays) {
+        String FILE_NAME = "timeState.txt";
+        int fileNumber = 0;
+        File file = new File(FILE_NAME);
+        
+        // check if file exists in current directory
+        while (file.exists()) {
+            fileNumber++;
+            file = new File(FILE_NAME.substring(0, FILE_NAME.indexOf(".")) + fileNumber + ".txt");
+        }
+        
+        // create new file
+        try {
+            file.createNewFile();
+        } catch (IOException e) {
+            System.err.println("Error creating new file: " + e.getMessage());
+            return;
+        }
+        
+        // write data to file
+        try (FileWriter writer = new FileWriter(file)) {
+            for (float[] floatArray : listOfFloatArrays) {
+                for (int i = 0; i < floatArray.length; i++) {
+                    writer.write(String.valueOf(floatArray[i]));
+                    if (i != floatArray.length - 1) {
+                        writer.write(", ");
+                    }
+                }
+                writer.write(System.lineSeparator());
+            }
+        } catch (IOException e) {
+            System.err.println("Error writing to file: " + e.getMessage());
+            return;
+        }
     }
 
     /**
