@@ -199,7 +199,8 @@ public class SymbolicExecutionLab {
         // Guard clauses
         if (!condition.z3var.isBool()) { throw new IllegalArgumentException("\nUnexpected Expr Sort in encounteredNewBranch(): "+ condition.z3var.getSort());}
         if(!FuzzerState.currentUniqueBranchesCovered.add(new AbstractMap.SimpleEntry<>(value, lineNumber))) { return; } // There is no situation where a "current" branch is not unique to current branches, but is unique to all visited branches.
-        
+        // TODO: remove value from map
+
         updateMaxCoveringInput();
         FuzzerOutput.uniqueVisitedBranches.add(new AbstractMap.SimpleEntry<>(value, lineNumber)); 
         BoolExpr oppositeBranch = CTX.mkEq(condition.z3var, value ? CTX.mkFalse() : CTX.mkTrue());
@@ -219,6 +220,9 @@ public class SymbolicExecutionLab {
      */
     static void newSatisfiableInput(LinkedList<String> new_inputs) {
         PRINT_FUNCTION_NAME();
+        // System.out.println("(before) new_inputs: "  + new_inputs.toString());
+        for (String symbol : new_inputs) {symbol = symbol.replaceAll("\"", "");} // remove quotes from z3 return
+        // System.out.println("(after) new_inputs: "  + new_inputs.toString());
         FuzzerState.currentTraceLength++; // TESTING OUT SUGGESTION FROM MATTERMOST
         FuzzerState.satisfiableInputs.push((LinkedList<String>) fillTrace(new_inputs, PathTracker.inputSymbols));
         FuzzerState.currentTraceLength--; // TESTING (there was no difference with or without this)
