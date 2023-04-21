@@ -7,7 +7,8 @@ import java.util.*;
  */
 public class FuzzingLab {
         // Constants
-        private static final int TRACE_LENGTH = 10;
+        private static final int INITIAL_TRACE_LENGTH = 3; // must be greater than or equal to MAX_MUTATION_REACH
+        private static final int MAX_MUTATION_REACH = 3; 
         private static final int STRICT_INEQUALITY_MINIMUM_BRANCH_DISTANCE = 1;
         private static final int RANDOM_MUTATION_ATTEMPTS = 10;
         private static final long NANOSECS_PER_SEC = 1000l*1000*1000;
@@ -19,7 +20,7 @@ public class FuzzingLab {
         private static class FuzzerState {
                 static List<String> currentTrace = Arrays.asList("");
                 static double currentSumOfBranchDistances = 0;
-                static Set<Integer> currentUniqueBranchesCovered = new HashSet<>();
+                static Set<AbstractMap.SimpleEntry<Boolean, Integer>> currentUniqueBranchesCovered = new HashSet<>();
                 static boolean isFinished = false;
         }
         // Values output by the fuzzer at the end
@@ -38,7 +39,7 @@ public class FuzzingLab {
 
         // If a new branch is found, keep track of it and update the total branch distance.
         static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
-                FuzzerState.currentUniqueBranchesCovered.add(line_nr);
+                FuzzerState.currentUniqueBranchesCovered.add(new AbstractMap.SimpleEntry<Boolean, Integer>(value, line_nr));
                 FuzzerState.currentSumOfBranchDistances += branchDistance(condition, value);
                 FuzzerOutput.uniqueVisitedBranches.add(new AbstractMap.SimpleEntry<Boolean, Integer>(value, line_nr));
                 if (FuzzerState.currentUniqueBranchesCovered.size() > FuzzerOutput.mostBranchesCovered) {
@@ -47,10 +48,14 @@ public class FuzzingLab {
                 }
         }
 
-        // Copies the input trace and changes one element to a random element of inputSymbols
-        static List<String> fuzz(String[] inputSymbols, List<String> trace, int pos){
+        // Copies the input trace and makes MAX_MUTATION_REACH number of mutations, deletions and extensions respectively.
+        static List<String> fuzz(String[] inputSymbols, List<String> trace){
                 List<String> fuzzedTrace = new ArrayList<>(trace);
-                fuzzedTrace.set(pos, inputSymbols[RNG.nextInt(inputSymbols.length)]);
+                for (int i = 0; i < MAX_MUTATION_REACH; i++) {
+                        fuzzedTrace.set(RNG.nextInt(fuzzedTrace.size()), inputSymbols[RNG.nextInt(inputSymbols.length)]);       // multiple single element mutations
+                        fuzzedTrace.remove(RNG.nextInt(fuzzedTrace.size()));                                                    // multiple single element deletions
+                        fuzzedTrace.add(inputSymbols[RNG.nextInt(inputSymbols.length)]);                                        // multiple single element extensions
+                }
                 return fuzzedTrace;
         }
 
@@ -71,9 +76,9 @@ public class FuzzingLab {
          * @param symbols the symbols from which a trace should be generated from.
          * @return a random trace that is generated from the given symbols.
          */
-        static List<String> generateRandomTrace(String[] symbols) {
+        static List<String> generateRandomTrace(String[] symbols, int length) {
                 ArrayList<String> trace = new ArrayList<>();
-                for (int i = 0; i < TRACE_LENGTH; i++) {
+                for (int i = 0; i < length; i++) {
                         trace.add(symbols[RNG.nextInt(symbols.length)]);
                 }
                 return trace;
@@ -109,6 +114,8 @@ public class FuzzingLab {
                         case BOOL:
                                 return condition.left.value == condition.right.value ? 0 : 1;
                         case UNARY:
+                                System.out.println("Found unary operator in equality: " + condition.operator + " " + condition.left.value);
+                                return -1;
                         case INT:
                                 return Math.abs(getIntValue(condition.left)-getIntValue(condition.right));
                         case STRING:
@@ -216,10 +223,12 @@ public class FuzzingLab {
         
         
         static void run() {
+                if(!(INITIAL_TRACE_LENGTH >= MAX_MUTATION_REACH)) {throw new AssertionError("INITIAL_TRACE_LENGTH must be >= MAX_MUTATION_REACH"); }; // assert keyword is turned off by default, I don't want that here.
                 // Initialize
                 // put this to 1000 for testing purposes.
                 int maxIterations = 1000;
-                FuzzerState.currentTrace = generateRandomTrace(DistanceTracker.inputSymbols);
+                int traceLength = INITIAL_TRACE_LENGTH;
+                FuzzerState.currentTrace = generateRandomTrace(DistanceTracker.inputSymbols, traceLength);
                 DistanceTracker.runNextFuzzedSequence(FuzzerState.currentTrace.toArray(new String[0]));
 
                 int i = 0;
@@ -232,7 +241,7 @@ public class FuzzingLab {
                         for(int j = 0; j < RANDOM_MUTATION_ATTEMPTS; j++) {
                                 FuzzerState.currentSumOfBranchDistances = 0;
                                 FuzzerState.currentUniqueBranchesCovered.clear();
-                                List<String> fuzzedTrace = fuzz(DistanceTracker.inputSymbols, FuzzerState.currentTrace, j);
+                                List<String> fuzzedTrace = fuzz(DistanceTracker.inputSymbols, FuzzerState.currentTrace);
                                 DistanceTracker.runNextFuzzedSequence(fuzzedTrace.toArray(new String[0]));
                                 if (FuzzerState.currentSumOfBranchDistances < bestNewDistance) {
                                         bestNewTrace = fuzzedTrace;
@@ -244,7 +253,7 @@ public class FuzzingLab {
                                 System.out.println("!no new better fuzzed trace!");
                                 FuzzerState.currentSumOfBranchDistances = 0;
                                 FuzzerState.currentUniqueBranchesCovered.clear();
-                                FuzzerState.currentTrace = generateRandomTrace(DistanceTracker.inputSymbols);
+                                FuzzerState.currentTrace = generateRandomTrace(DistanceTracker.inputSymbols, ++traceLength);
                                 DistanceTracker.runNextFuzzedSequence(FuzzerState.currentTrace.toArray(new String[0]));
                         } else {
                                 FuzzerState.currentTrace = bestNewTrace;
@@ -261,6 +270,7 @@ public class FuzzingLab {
          * @param out the string that has been outputted in the standard out.
          */
         public static void output(String out){
+                if (out.contains("no transition")) { return; }
                 System.out.println(out);
                 String[] splitOutput = out.split("error_", 2);
                 if (splitOutput.length == 2) {
