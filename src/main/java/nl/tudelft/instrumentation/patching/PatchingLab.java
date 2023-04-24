@@ -8,7 +8,7 @@ import org.apache.commons.lang3.ArrayUtils;
 
 public class PatchingLab {
         // Hyperparameters
-        private static final int      POPULATION_SIZE   = 44;   // must be an even number
+        private static final int      POPULATION_SIZE   = 44;
         private static final double   SURVIVOR_FRACTION = 0.1;  // fraction of population that survives selection process
         private static final float    MUTATION_RATE     = 0.2f;
         
@@ -21,27 +21,25 @@ public class PatchingLab {
         // TODO: re-add stuff for plotting
 
         // EA state
-        private static class Individual { // TODO: re-add new child check
+        private static class Individual {
                 String[]      operators    = new String[NUM_OPERATORS];
                 List<Boolean> testResults  = new ArrayList<>();
                 double        fitnessScore = 0.0;
                 double[]      tarantulaScores;
+                boolean       newborn      = true;
 
                 // Mutates operators as indices given by mutationIndices
                 void mutate(int mutationIndex) {
                         if (mutationIndex == -1) return; // no mutation if no suspicious index was found
-                        
                         int length = 0;
                         if (operatorTypes[mutationIndex] == typeEnum.INT) {length = POSSIBLE_OPERATORS.length;}
                         else if (operatorTypes[mutationIndex] == typeEnum.BOOL) {length = 2;}
-                        // Special case, operator wasn't covered by any tests. Let's mutate it anyway (and hope for the best regarding type).
-                        else {  length = POSSIBLE_OPERATORS.length;}
+                        else {  length = POSSIBLE_OPERATORS.length;} // Special case, operator wasn't covered by any tests. Let's mutate it anyway (and hope for the best regarding type).
                         operators[mutationIndex] = POSSIBLE_OPERATORS[RNG.nextInt(length)];       
                 }
-
         }
-        private static Individual ancestor; // TODO: make final?
-        private static boolean findingFaults = true; // TODO: remove if we dont need.
+
+        private static Individual ancestor;
 
         private static enum typeEnum {
                 INT,
@@ -64,8 +62,7 @@ public class PatchingLab {
         static boolean encounteredOperator(String operator, int left, int right, int operator_nr) {
                 // Do something useful
                 if (operatorTypes[operator_nr] == typeEnum.UNDEFINED) {operatorTypes[operator_nr] = typeEnum.INT;}
-                if (findingFaults) mapCurrentTestToOperator(operator_nr);
-                
+                mapCurrentTestToOperator(operator_nr);
 
                 String replacement = OperatorTracker.operators[operator_nr];
                 if(replacement.equals("!=")) return left != right;
@@ -80,7 +77,7 @@ public class PatchingLab {
         static boolean encounteredOperator(String operator, boolean left, boolean right, int operator_nr) {
                 // Do something useful
                 if (operatorTypes[operator_nr] == typeEnum.UNDEFINED) {operatorTypes[operator_nr] = typeEnum.BOOL;}
-                if (findingFaults) mapCurrentTestToOperator(operator_nr);
+                mapCurrentTestToOperator(operator_nr);
 
                 String replacement = OperatorTracker.operators[operator_nr];
                 if(replacement.equals("!=")) return left != right;
@@ -111,7 +108,6 @@ public class PatchingLab {
                         int dummyVar = testResults.get(testIndex) ? lineResults[PASS]++ : lineResults[FAIL]++;
                 }
                 return lineResults;
-
         }
 
         private static double[] computeTarantulaScores(List<Boolean> testResults, int numOperators, Map<Integer, List<Integer>> testSpectrum) {
@@ -147,16 +143,15 @@ public class PatchingLab {
 
         /// INIT ///
 
-        private static void initialize(){
+        private static void initialize() {
                 java.util.Arrays.fill(operatorTypes, typeEnum.UNDEFINED);
 
                 ancestor = new Individual() {{operators = OperatorTracker.operators.clone();}};
                 ancestor.testResults = runTests(ancestor.operators);
                 ancestor.tarantulaScores = computeTarantulaScores(ancestor.testResults, NUM_OPERATORS, currentTestSpectrum);
 
-                for (int i = 0; i < POPULATION_SIZE; i++) {
+                for (int i = 0; i < POPULATION_SIZE-1; i++) {
                         Individual offspring = new Individual() {{operators = ancestor.operators.clone();}};
-                        // offspring.mutate(tarantulaIndices(ancestor.tarantulaScores)); // TODO: add if it still works with it (with small chance)
                         population.add(offspring);
                 }
                 population.add(ancestor);
@@ -171,12 +166,13 @@ public class PatchingLab {
                 return OperatorTracker.runAllTests();
         }
 
-        private static void runAllTests(List<Individual> population) { // TODO: rename to avoid confusion with OperatorTracker.runAllTests
-                for (int i = 0; i < population.size(); i++) { // TODO: re-add new child checks
+        private static void evaluation() {
+                for (int i = 0; i < population.size(); i++) {
                         Individual individual      = population.get(i);
                         individual.testResults     = runTests(individual.operators);
                         individual.fitnessScore    = computeFitnessScore(individual.testResults);
                         individual.tarantulaScores = computeTarantulaScores(individual.testResults, NUM_OPERATORS, currentTestSpectrum);
+                        individual.newborn         = false;
                 }
         }
 
@@ -191,7 +187,8 @@ public class PatchingLab {
 
         /// MUTATION ///
         
-        private static int tarantulaIndices(double[] tarantulaScores) {
+
+        private static int tarantulaIndex(double[] tarantulaScores) {
                 double tarantulaScoreThreshold = 0.7;
                 int mutationIndex = -1;
                 int i = 0;
@@ -208,10 +205,14 @@ public class PatchingLab {
         // Mutate small percentage of population based on tarantula fault localization
         private static void mutation() {
                 for (int i = 0; i < population.size(); i++) {
-                        Individual individial = population.get(i);
+                        Individual individual = population.get(i);
                         if (RNG.nextFloat() < MUTATION_RATE) {
-                                individial.mutate(tarantulaIndices(individial.tarantulaScores));
-                                // TODO: re-add new child check
+                                if (individual.newborn) {
+                                        individual.newborn         = false;
+                                        individual.testResults     = runTests(individual.operators);
+                                        individual.tarantulaScores = computeTarantulaScores(individual.testResults, NUM_OPERATORS, currentTestSpectrum);
+                                }
+                                individual.mutate(tarantulaIndex(individual.tarantulaScores));
                         }
                 }
         }
@@ -225,32 +226,22 @@ public class PatchingLab {
 
         // Single Point Crossover at specified index
         private static Individual[] singlePointCrossover(Individual A, Individual B, int crossoverPoint) {
-                Individual child1 = new Individual();
-                Individual child2 = new Individual();
-                child1.operators = new String[NUM_OPERATORS];
-                child2.operators = new String[NUM_OPERATORS];
+                Individual child1 = new Individual(), child2 = new Individual();
                 for(int j = 0; j < NUM_OPERATORS; j++) {
                         child1.operators[j] = j > crossoverPoint ? A.operators[j] : B.operators[j];
                         child2.operators[j] = j <= crossoverPoint ? A.operators[j] : B.operators[j];
                 }
-                child1.testResults = runTests(child1.operators); // TODO: re-add new child check and 
-                child1.tarantulaScores = computeTarantulaScores(child1.testResults, NUM_OPERATORS, currentTestSpectrum);
-                child2.testResults = runTests(child2.operators);
-                child2.tarantulaScores = computeTarantulaScores(child2.testResults, NUM_OPERATORS, currentTestSpectrum);
                 return new Individual[] {child1, child2};
         }
 
         // 
         private static void crossover() {
                 List<Individual> nextGenerationPopulation = new ArrayList(POPULATION_SIZE);
-
                 while (nextGenerationPopulation.size() < POPULATION_SIZE) {
                         Individual[] children = singlePointCrossover(population.get(RNG.nextInt(population.size())), population.get(RNG.nextInt(population.size())));
                         nextGenerationPopulation.add(children[0]);
                         nextGenerationPopulation.add(children[1]);
-
                 }
-
                 population = nextGenerationPopulation;
         }
 
@@ -259,27 +250,23 @@ public class PatchingLab {
          */
         static void run() {
                 boolean isFinished = false;
-
                 long startTime = System.currentTimeMillis();
 
                 // Initial population
                 initialize();
 
                 while (!isFinished) {
-                        runAllTests(population);
-
-                        // Also end the test when 30 min have passed
-                        //isFinished = monitor() || System.currentTimeMillis() - startTime > 1800000;
-
+                        // Evaluation of fitness and suspicious operators
+                        evaluation();
                         isFinished = monitor() || System.currentTimeMillis() - startTime > 5*60000;
 
-                        // Selection
+                        // Tournament style selection
                         selection();
 
-                        // Crossover
+                        // Single point crossover reproduction
                         crossover();
 
-                        // Mutation 
+                        // Random mutation
                         mutation();
                 }
                 System.out.println("\n\nEND\n\n");
@@ -292,10 +279,8 @@ public class PatchingLab {
                 for (Individual individual : population) {bestFitness = individual.fitnessScore > bestFitness ? individual.fitnessScore : bestFitness;}
                 
                 System.out.println("bestFitness: " + bestFitness);
-                if(bestFitness < 0.999999) {
-                        return false;
-                }
- 
+                if(bestFitness < 0.999999) { return false; }
+
                 System.out.println("\nAlgorithm finished (with perfect tests).\n");
                 return true;
         }
