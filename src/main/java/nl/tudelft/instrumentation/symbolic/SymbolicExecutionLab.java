@@ -18,7 +18,7 @@ public class SymbolicExecutionLab {
     // Constants
     private static final boolean DEBUG = false;
     private static final double MAX_ITERATIONS = Double.POSITIVE_INFINITY; // double because then we can use infinity to run based on time only
-    private static final int INITIAL_TRACE_LENGTH = 0;
+    private static final int INITIAL_TRACE_LENGTH = 1;
     private static final long NANOSECS_PER_SEC = 1000L*1000*1000;
     private static final long FIVE_MIN_IN_NANOSECS = 5*60*NANOSECS_PER_SEC;
     private static final Random RNG = new Random();
@@ -28,6 +28,7 @@ public class SymbolicExecutionLab {
     private static class FuzzerState {
             static int currentTraceLength = INITIAL_TRACE_LENGTH;
             static List<String> currentTrace = new LinkedList<>();
+            static Set<Triplet<List<String>, Boolean, Integer>> solvedTraceBranchCombinations = new HashSet<>();
             static Set<AbstractMap.SimpleEntry<Boolean, Integer>> currentUniqueBranchesCovered = new HashSet<>();
             static Stack<LinkedList<String>> satisfiableInputs = new Stack<>();
             static boolean isFinished = false;
@@ -80,8 +81,6 @@ public class SymbolicExecutionLab {
         switch (operator) {
             case "!":
                 return new MyVar(CTX.mkNot(var));
-            case "":
-                return new MyVar(var);
             default:
                 throw new IllegalArgumentException("\nUnexpected operator in (unary) createBoolExpr(): "+ operator);
         }
@@ -195,23 +194,27 @@ public class SymbolicExecutionLab {
      */
     static void encounteredNewBranch(MyVar condition, boolean value, int lineNumber){
         // PRINT_FUNCTION_NAME();
-        
-        // Guard clauses
         if (!condition.z3var.isBool()) { throw new IllegalArgumentException("\nUnexpected Expr Sort in encounteredNewBranch(): "+ condition.z3var.getSort());}
-        if(!FuzzerState.currentUniqueBranchesCovered.add(new AbstractMap.SimpleEntry<>(value, lineNumber))) { return; } // There is no situation where a "current" branch is not unique to current branches, but is unique to all visited branches.
-        // TODO: remove value from map
 
-        updateMaxCoveringInput();
         FuzzerOutput.uniqueVisitedBranches.add(new AbstractMap.SimpleEntry<>(value, lineNumber)); 
-        BoolExpr oppositeBranch = CTX.mkEq(condition.z3var, value ? CTX.mkFalse() : CTX.mkTrue());
+        FuzzerState.currentUniqueBranchesCovered.add(new AbstractMap.SimpleEntry<>(value, lineNumber));
+        updateMaxCoveringInput();
 
-        switch(PathTracker.solve(oppositeBranch, false)) {
-            case SATISFIABLE: break;
-            case UNSATISFIABLE: break; // Can we do something smart if we know the branch cannot be reached?
-            case UNKNOWN: break; // Here one would hypothetically do concolic execution?
-            default: throw new IllegalArgumentException("Unexpected return from PathTracker.solve()");
-        }
-        PathTracker.addToBranches((BoolExpr)condition.z3var); // add current branch after attempting to solve for oppositeBranch
+        // Check for already solved trace for this branch
+        if(!FuzzerState.solvedTraceBranchCombinations.add(new Triplet<>(FuzzerState.currentTrace, value, lineNumber))) { return; }
+
+        BoolExpr oppositeBranch = CTX.mkEq(condition.z3var, value ? CTX.mkFalse() : CTX.mkTrue());
+        PathTracker.solve(oppositeBranch, false);
+
+        // switch(PathTracker.solve(oppositeBranch, false)) { // We didn't end up using the return value we added
+        //     case SATISFIABLE: break;
+        //     case UNSATISFIABLE: break; // Can we do something smart if we know the branch cannot be reached?
+        //     case UNKNOWN: break; // Here one would hypothetically do concolic execution?
+        //     default: throw new IllegalArgumentException("Unexpected return from PathTracker.solve()");
+        // }
+        
+        BoolExpr branch = value ? (BoolExpr) condition.z3var : CTX.mkNot((BoolExpr) condition.z3var);
+        PathTracker.addToBranches(branch); // add current branch after attempting to solve for oppositeBranch
     }
 
     /**
@@ -220,12 +223,8 @@ public class SymbolicExecutionLab {
      */
     static void newSatisfiableInput(LinkedList<String> new_inputs) {
         PRINT_FUNCTION_NAME();
-        // System.out.println("(before) new_inputs: "  + new_inputs.toString());
-        for (String symbol : new_inputs) {symbol = symbol.replaceAll("\"", "");} // remove quotes from z3 return
-        // System.out.println("(after) new_inputs: "  + new_inputs.toString());
-        FuzzerState.currentTraceLength++; // TESTING OUT SUGGESTION FROM MATTERMOST
+        for (int i = 0; i < new_inputs.size(); i++) {new_inputs.set(i, new_inputs.get(i).replaceAll("\"", ""));} // remove quotes from z3 return
         FuzzerState.satisfiableInputs.push((LinkedList<String>) fillTrace(new_inputs, PathTracker.inputSymbols));
-        FuzzerState.currentTraceLength--; // TESTING (there was no difference with or without this)
     }
 
     /**
@@ -254,15 +253,20 @@ public class SymbolicExecutionLab {
         return trace;
     }
 
-    // Return first element of FuzzerState.satisfiableInputs is it exists, otherwise return randomly generated trace.
-    static List<String> fuzz(int i, String[] inputSymbols){
+    /**
+     * Updates trace to one of the satisfiable inputs that have been found by the solver,
+     * and adds an additional random symbol at the end to allow for discovering more branches.
+     * @param inputSymbols symbols to choose from when extending trace
+     * @return true if no more satisfiable inputs, false otherwise
+     */
+    static boolean fuzz(String[] inputSymbols){
         // PRINT_FUNCTION_NAME();
+        if (FuzzerState.satisfiableInputs.size() <= 0) { return true; }
 
-        if (FuzzerState.satisfiableInputs.size() > 0) {return FuzzerState.satisfiableInputs.pop();}
-
-        // System.out.println("DEBUG: no more satisfiableInputs, increasing trace length.");
+        FuzzerState.currentTrace = FuzzerState.satisfiableInputs.pop();
         FuzzerState.currentTraceLength += 1;
-        return generateRandomTrace(inputSymbols);
+        FuzzerState.currentTrace = fillTrace(FuzzerState.currentTrace, inputSymbols);
+        return false;
     }
 
     /**
@@ -272,16 +276,17 @@ public class SymbolicExecutionLab {
         PRINT_FUNCTION_NAME();
         printDebugWarning();
 
+        FuzzerState.currentTrace = generateRandomTrace(PathTracker.inputSymbols);
+
         int i = 0;
         double startTime = System.nanoTime();
-        while(!FuzzerState.isFinished && i < MAX_ITERATIONS) {
+        while (!FuzzerState.isFinished && i < MAX_ITERATIONS) {
 
-            FuzzerState.currentUniqueBranchesCovered.clear();
-            FuzzerState.currentTrace = fuzz(i, PathTracker.inputSymbols);
+            FuzzerState.currentUniqueBranchesCovered.clear(); // TODO: test without clearing
             PathTracker.reset();
             PathTracker.runNextFuzzedSequence(FuzzerState.currentTrace.toArray(new String[0]));
 
-            FuzzerState.isFinished = ((System.nanoTime() - startTime) >= FIVE_MIN_IN_NANOSECS);
+            FuzzerState.isFinished = ((System.nanoTime() - startTime) >= FIVE_MIN_IN_NANOSECS) || fuzz(PathTracker.inputSymbols);
             i++;
             System.gc(); // Trying fix for timeout issues
         }
@@ -290,18 +295,14 @@ public class SymbolicExecutionLab {
 
     // Method that is used for catching the output from standard out.
     public static void output(String out){
-        // if(!out.contains("no transition")) {
-        //     System.out.println(out);
-        // }
+        if (out.contains("no transition")) { return; }
         String[] splitOutput = out.split("error_", 2);
-        if (splitOutput.length == 2) {
-                FuzzerOutput.triggeredErrorCodes.add(splitOutput[1]);
-        }
+        if (splitOutput.length == 2) { FuzzerOutput.triggeredErrorCodes.add(splitOutput[1]); }
     }
 
     // Helper for debugging (this implementation is not foolproof)
     public static void PRINT_FUNCTION_NAME(){
-        if(DEBUG) System.out.println(Thread.currentThread().getStackTrace()[2].getMethodName());;
+        if (DEBUG) System.out.println(Thread.currentThread().getStackTrace()[2].getMethodName());;
     }
 
     // Helper for warning about debug printing
@@ -315,4 +316,33 @@ public class SymbolicExecutionLab {
             }
         }  
     }
+
+    // Simple Triplet class for storing (trace, value, line_nr) triplets in a set
+    private static class Triplet<A, B, C> {
+        private final A first;
+        private final B second;
+        private final C third;
+    
+        public Triplet(A first, B second, C third) {
+            this.first = first;
+            this.second = second;
+            this.third = third;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Triplet<?, ?, ?> triplet = (Triplet<?, ?, ?>) o;
+            return Objects.equals(first, triplet.first) &&
+                    Objects.equals(second, triplet.second) &&
+                    Objects.equals(third, triplet.third);
+        }
+    
+        @Override
+        public int hashCode() {
+            return Objects.hash(first, second, third);
+        }
+    }
+    
 }
