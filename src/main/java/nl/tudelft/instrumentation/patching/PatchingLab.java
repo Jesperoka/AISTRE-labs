@@ -226,7 +226,10 @@ public class PatchingLab {
 
         // Single Point Crossover at specified index
         private static Individual[] singlePointCrossover(Individual A, Individual B, int crossoverPoint) {
-                Individual child1 = new Individual(), child2 = new Individual();
+                Individual child1 = new Individual(); 
+                Individual child2 = new Individual();
+                child1.operators = new String[NUM_OPERATORS];
+                child2.operators = new String[NUM_OPERATORS];
                 for(int j = 0; j < NUM_OPERATORS; j++) {
                         child1.operators[j] = j > crossoverPoint ? A.operators[j] : B.operators[j];
                         child2.operators[j] = j <= crossoverPoint ? A.operators[j] : B.operators[j];
@@ -258,7 +261,7 @@ public class PatchingLab {
                 while (!isFinished) {
                         // Evaluation of fitness and suspicious operators
                         evaluation();
-                        isFinished = monitor() || System.currentTimeMillis() - startTime > 5*60000;
+                        isFinished = monitor() || System.currentTimeMillis() - startTime > 10*60000;    
 
                         // Tournament style selection
                         selection();
