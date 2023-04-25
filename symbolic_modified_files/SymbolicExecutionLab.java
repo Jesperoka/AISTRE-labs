@@ -1,0 +1,348 @@
+package nl.tudelft.instrumentation.symbolic;
+
+import java.sql.Array;
+import java.util.*;
+import com.microsoft.z3.*;
+import nl.tudelft.instrumentation.fuzzing.DistanceTracker;
+
+import java.io.FileWriter;
+import java.io.IOException;
+
+// Student imports
+import java.io.Serializable;
+
+/**
+ * You should write your solution using this class.
+ */
+public class SymbolicExecutionLab {
+    // Constants
+    private static final boolean DEBUG = false;
+    private static final double MAX_ITERATIONS = Double.POSITIVE_INFINITY; // double because then we can use infinity to run based on time only
+    private static final int INITIAL_TRACE_LENGTH = 1;
+    private static final long NANOSECS_PER_SEC = 1000L*1000*1000;
+    private static final long FIVE_MIN_IN_NANOSECS = 5*60*NANOSECS_PER_SEC;
+    private static final Random RNG = new Random();
+    private static final Context CTX = PathTracker.ctx;
+
+    // Variables used by the fuzzer
+    private static class FuzzerState {
+            static int currentTraceLength = INITIAL_TRACE_LENGTH;
+            static List<String> currentTrace = new LinkedList<>();
+            static Set<Triplet<List<String>, Boolean, Integer>> solvedTraceBranchCombinations = new HashSet<>();
+            static Set<AbstractMap.SimpleEntry<Boolean, Integer>> currentUniqueBranchesCovered = new HashSet<>();
+            static Stack<LinkedList<String>> satisfiableInputs = new Stack<>();
+            static boolean isFinished = false;
+    }
+    // Values output by the fuzzer at the end
+    private static class FuzzerOutput {
+            static Set<String> triggeredErrorCodes = new HashSet<>();
+            static Set<AbstractMap.SimpleEntry<Boolean, Integer>> uniqueVisitedBranches = new HashSet<>();
+            static int mostBranchesCovered = 0;
+            static List<String> mostCoveringInput = new LinkedList<>();
+
+            static void display() {
+                    System.out.println("\nNumber of unique branches: " + FuzzerOutput.uniqueVisitedBranches.size() + "\n");
+                    System.out.println(FuzzerOutput.triggeredErrorCodes.size()+" error codes triggered:\n" + FuzzerOutput.triggeredErrorCodes + "\n");
+                    System.out.println("The input covering the most branches was:\n" + FuzzerOutput.mostCoveringInput + "\nWith " + FuzzerOutput.mostBranchesCovered + " branches covered.\n");
+            }
+    }
+
+    
+
+    // Create var, assign value and add to path constraint.
+    static MyVar createVar(String name, Expr value, Sort s){
+        // PRINT_FUNCTION_NAME();
+        Expr z3var = CTX.mkConst(CTX.mkSymbol(name + "_" + PathTracker.z3counter++), s);
+        PathTracker.addToModel(CTX.mkEq(z3var, value));
+        return new MyVar(z3var, name);
+    }
+
+    // Create an input var, these should be free variables. TODO: verify correctness
+    static MyVar createInput(String name, Expr value, Sort s){ // TODO: check for correct input
+        // PRINT_FUNCTION_NAME();
+    
+        Expr z3var = CTX.mkConst(CTX.mkSymbol(name + "_" + PathTracker.z3counter++), s);
+        MyVar var = new MyVar(z3var, name);
+        /// TESTING
+        BoolExpr constraint = CTX.mkFalse();
+        for (String input: PathTracker.inputSymbols) {
+            constraint = CTX.mkOr(CTX.mkEq(z3var, CTX.mkString(input)), constraint);
+        }
+        PathTracker.addToModel(constraint);
+        /// TESTING
+        PathTracker.inputs.push(var);
+        return var;
+    }
+
+    // Creates a boolean expression with a unary operator
+    static MyVar createBoolExpr(BoolExpr var, String operator){
+        // PRINT_FUNCTION_NAME();
+        // Any unary expression (!)
+        switch (operator) {
+            case "!":
+                return new MyVar(CTX.mkNot(var));
+            default:
+                throw new IllegalArgumentException("\nUnexpected operator in (unary) createBoolExpr(): "+ operator);
+        }
+    }
+
+    // Creates a boolean expression with a binary operator
+    static MyVar createBoolExpr(BoolExpr left_var, BoolExpr right_var, String operator){
+        // PRINT_FUNCTION_NAME();
+        // Any binary expression (&, &&, |, ||)
+        switch (operator) {
+            case "&":
+            case "&&":
+                return new MyVar(CTX.mkAnd(left_var, right_var));
+            case "|":
+            case "||":
+                return new MyVar(CTX.mkOr(left_var, right_var));
+            default:
+                throw new IllegalArgumentException("\nUnexpected operator in (binary) createBoolExpr(): "+ operator);
+        }
+    }
+
+    // Create an integer expression with a unary operator
+    static MyVar createIntExpr(IntExpr var, String operator){
+        // PRINT_FUNCTION_NAME();
+        // Any unary expression (+, -)
+        switch (operator) {
+            case "+":
+                return new MyVar(var);
+            case "-":
+                return new MyVar(CTX.mkUnaryMinus(var));
+            default:
+                throw new IllegalArgumentException("\nUnexpected operator in (unary) createBoolExpr(): "+ operator);
+        }
+    }
+
+    // Create an expression from integer expressions with a binary operator. Can result in boolean expression or arithmetic expression.
+    static MyVar createIntExpr(IntExpr left_var, IntExpr right_var, String operator){
+        // PRINT_FUNCTION_NAME();
+        // Any binary expression (+, -, /, *, %, ^, etc)
+        switch (operator) {
+
+            // Arithmetic expressions
+            case "+":
+                return new MyVar(CTX.mkAdd(left_var, right_var));
+            case "-":
+                return new MyVar(CTX.mkSub(left_var, right_var));
+            case "/":
+                return new MyVar(CTX.mkDiv(left_var, right_var));
+            case "*":
+                return new MyVar(CTX.mkMul(left_var, right_var));
+            case "%":
+                return new MyVar(CTX.mkMod(left_var, right_var));
+            case "^":
+                System.out.println("That's interesting, we have an XOR");
+                return new MyVar(CTX.mkBV2Int(CTX.mkBVXOR(CTX.mkInt2BV(32, left_var), CTX.mkInt2BV(32, right_var)), true));
+
+            // Boolean expressions
+            case "==":
+                return new MyVar(CTX.mkEq(left_var, right_var)); // TODO: maybe call .simplify() for some expressions
+            case "!=":
+                return new MyVar(CTX.mkNot(CTX.mkEq(left_var, right_var)));
+            case "<":
+                return new MyVar(CTX.mkGt(left_var, right_var));
+            case ">":
+                return new MyVar(CTX.mkLt(left_var, right_var));
+            case "<=":
+                return new MyVar(CTX.mkLe(left_var, right_var));
+            case ">=":
+                return new MyVar(CTX.mkGe(left_var, right_var));
+            default:
+                throw new IllegalArgumentException("\nUnexpected operator in (binary) createIntExpr(): "+ operator);
+        }
+    }
+
+    // Create a boolean equality expression from string expressions.
+    static MyVar createStringExpr(SeqExpr left_var, SeqExpr right_var, String operator){
+        // PRINT_FUNCTION_NAME();
+        // We only support String.equals
+        if ("==".equals(operator)) {
+            return new MyVar(CTX.mkEq(left_var, right_var));
+        }
+        throw new IllegalArgumentException("\nUnexpected operator in createStringExpr(): " + operator);
+    }
+
+    // Assignment changes the z3var in a MyVar variable. Uses single static assignment. TODO: verify correctness
+    static void assign(MyVar var, String name, Expr value, Sort s){
+        // PRINT_FUNCTION_NAME();
+        var.z3var = CTX.mkConst(CTX.mkSymbol(name + "_" + PathTracker.z3counter++), s); // This should actually change the value in Java right?
+        PathTracker.addToModel(CTX.mkEq(var.z3var, value));
+    }
+
+    /**
+     * Check if our current input trace covers more branches than the record so far,
+     * and update FuzzerOutput.mostBranchesCovered and FuzzerOutput.mostCoveringInput if so.
+     * @return true if an update was made, false otherwise
+     */
+    static boolean updateMaxCoveringInput() {
+        if (FuzzerState.currentUniqueBranchesCovered.size() > FuzzerOutput.mostBranchesCovered) {
+            FuzzerOutput.mostBranchesCovered = FuzzerState.currentUniqueBranchesCovered.size();
+            FuzzerOutput.mostCoveringInput = FuzzerState.currentTrace;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * This function is called whenever the executed program encounters a branch.
+     * @param condition The condition of the encountered branch
+     * @param value The actual value the branch evaluated to.
+     * @param lineNumber The linenumber that the branch occurred at.
+     */
+    static void encounteredNewBranch(MyVar condition, boolean value, int lineNumber){
+        // PRINT_FUNCTION_NAME();
+        if (!condition.z3var.isBool()) { throw new IllegalArgumentException("\nUnexpected Expr Sort in encounteredNewBranch(): "+ condition.z3var.getSort());}
+
+        FuzzerOutput.uniqueVisitedBranches.add(new AbstractMap.SimpleEntry<>(value, lineNumber)); 
+        FuzzerState.currentUniqueBranchesCovered.add(new AbstractMap.SimpleEntry<>(value, lineNumber));
+        updateMaxCoveringInput();
+
+        // Check for already solved trace for this branch
+        if(!FuzzerState.solvedTraceBranchCombinations.add(new Triplet<>(FuzzerState.currentTrace, value, lineNumber))) { return; }
+
+        BoolExpr oppositeBranch = CTX.mkEq(condition.z3var, value ? CTX.mkFalse() : CTX.mkTrue());
+        PathTracker.solve(oppositeBranch, false);
+
+        // switch(PathTracker.solve(oppositeBranch, false)) { // We didn't end up using the return value we added
+        //     case SATISFIABLE: break;
+        //     case UNSATISFIABLE: break; // Can we do something smart if we know the branch cannot be reached?
+        //     case UNKNOWN: break; // Here one would hypothetically do concolic execution?
+        //     default: throw new IllegalArgumentException("Unexpected return from PathTracker.solve()");
+        // }
+        
+        BoolExpr branch = value ? (BoolExpr) condition.z3var : CTX.mkNot((BoolExpr) condition.z3var);
+        PathTracker.addToBranches(branch); // add current branch after attempting to solve for oppositeBranch
+    }
+
+    /**
+     * Called when the solver finds a trace that satisfies the branch.
+     * @param new_inputs when these inputs are given to the program then it reaches the new branch.
+     */
+    static void newSatisfiableInput(LinkedList<String> new_inputs) {
+        PRINT_FUNCTION_NAME();
+        for (int i = 0; i < new_inputs.size(); i++) {new_inputs.set(i, new_inputs.get(i).replaceAll("\"", ""));} // remove quotes from z3 return
+        FuzzerState.satisfiableInputs.push((LinkedList<String>) fillTrace(new_inputs, PathTracker.inputSymbols));
+    }
+
+    /**
+     * This method fills a trace given back by the solver up till the trace length to potentially trigger more branches.
+     * @param newTrace The trace to be filled.
+     * @param symbols THe set of allowed inputsymbols
+     * @return the trace with potentially added characters.
+     */
+    static List<String> fillTrace(List<String> newTrace, String[] symbols) {
+        while (newTrace.size() < FuzzerState.currentTraceLength) {
+            newTrace.add(symbols[RNG.nextInt(symbols.length)]);
+        }
+        return newTrace;
+    }
+
+    /**
+     * Uses the set of input symbols and the trace length to generate a new random trace.
+     * @param symbols the set of allowed input symbols
+     * @return a trace of length currentTraceLength that contains random input symbols
+     */
+    static List<String> generateRandomTrace(String[] symbols) {
+        ArrayList<String> trace = new ArrayList<>();
+        for (int i = 0; i < FuzzerState.currentTraceLength; i++) {
+            trace.add(symbols[RNG.nextInt(symbols.length)]);
+        }
+        return trace;
+    }
+
+    /**
+     * Updates trace to one of the satisfiable inputs that have been found by the solver,
+     * and adds an additional random symbol at the end to allow for discovering more branches.
+     * @param inputSymbols symbols to choose from when extending trace
+     * @return true if no more satisfiable inputs, false otherwise
+     */
+    static boolean fuzz(String[] inputSymbols){
+        // PRINT_FUNCTION_NAME();
+        if (FuzzerState.satisfiableInputs.size() <= 0) { return true; }
+
+        FuzzerState.currentTrace = FuzzerState.satisfiableInputs.pop();
+        FuzzerState.currentTraceLength += 1;
+        FuzzerState.currentTrace = fillTrace(FuzzerState.currentTrace, inputSymbols);
+        return false;
+    }
+
+    /**
+     * This method runs the symbolic execution.
+     */
+    static void run() {
+        PRINT_FUNCTION_NAME();
+        printDebugWarning();
+
+        FuzzerState.currentTrace = generateRandomTrace(PathTracker.inputSymbols);
+
+        int i = 0;
+        double startTime = System.nanoTime();
+        while (!FuzzerState.isFinished && i < MAX_ITERATIONS) {
+
+            FuzzerState.currentUniqueBranchesCovered.clear(); // TODO: test without clearing
+            PathTracker.reset();
+            PathTracker.runNextFuzzedSequence(FuzzerState.currentTrace.toArray(new String[0]));
+
+            FuzzerState.isFinished = ((System.nanoTime() - startTime) >= FIVE_MIN_IN_NANOSECS) || fuzz(PathTracker.inputSymbols);
+            i++;
+            System.gc(); // Trying fix for timeout issues
+        }
+        FuzzerOutput.display();
+    }
+
+    // Method that is used for catching the output from standard out.
+    public static void output(String out){
+        if (out.contains("no transition")) { return; }
+        String[] splitOutput = out.split("error_", 2);
+        if (splitOutput.length == 2) { FuzzerOutput.triggeredErrorCodes.add(splitOutput[1]); }
+    }
+
+    // Helper for debugging (this implementation is not foolproof)
+    public static void PRINT_FUNCTION_NAME(){
+        if (DEBUG) System.out.println(Thread.currentThread().getStackTrace()[2].getMethodName());;
+    }
+
+    // Helper for warning about debug printing
+    private static void printDebugWarning() {
+        if (DEBUG) {
+            System.err.println("\n\n\n\n\n\n\n\n\n\nDEBUG PRINTING IS ON, EXECUTION WILL BE SLOW...\n\n\n\n\n\n\n\n\n\n");
+            try {
+                Thread.sleep(1500);
+            } catch (InterruptedException e) {
+                    e.printStackTrace();
+            }
+        }  
+    }
+
+    // Simple Triplet class for storing (trace, value, line_nr) triplets in a set
+    private static class Triplet<A, B, C> {
+        private final A first;
+        private final B second;
+        private final C third;
+    
+        public Triplet(A first, B second, C third) {
+            this.first = first;
+            this.second = second;
+            this.third = third;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Triplet<?, ?, ?> triplet = (Triplet<?, ?, ?>) o;
+            return Objects.equals(first, triplet.first) &&
+                    Objects.equals(second, triplet.second) &&
+                    Objects.equals(third, triplet.third);
+        }
+    
+        @Override
+        public int hashCode() {
+            return Objects.hash(first, second, third);
+        }
+    }
+    
+}
